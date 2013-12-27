@@ -1,0 +1,2 @@
+gccDebug/testOutput.txt = Goodbye cruel world!
+gccRelease/testOutput.txt = Hello, Worm!
