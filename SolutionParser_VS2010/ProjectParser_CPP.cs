@@ -353,7 +353,7 @@ namespace SolutionParser_VS2010
                     // And extract various details from it...
                     parseCompilerSettings_IncludePath(vcConfiguration, compilerToolInSheet, configurationInfo);
                     parseCompilerSettings_PreprocessorDefinitions(vcConfiguration, compilerToolInSheet, configurationInfo);
-                    parseCompilerSettings_CompilerFlags(vcConfiguration, compilerToolInSheet, configurationInfo);
+                    //parseCompilerSettings_CompilerFlags(vcConfiguration, compilerToolInSheet, configurationInfo);
                 }
             }
         }
