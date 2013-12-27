@@ -327,6 +327,29 @@ namespace SolutionParser_VS2010
             parseCompilerSettings_IncludePath(vcConfiguration, compilerTool, configurationInfo);
             parseCompilerSettings_PreprocessorDefinitions(vcConfiguration, compilerTool, configurationInfo);
             parseCompilerSettings_CompilerFlags(vcConfiguration, compilerTool, configurationInfo);
+
+            IVCCollection sheets = Utils.call(() => (vcConfiguration.PropertySheets as IVCCollection));
+            int numSheets = Utils.call(() => (sheets.Count));
+            for (int i = 1; i <= numSheets; ++i)
+            {
+                VCPropertySheet sheet = Utils.call(() => (sheets.Item(i) as VCPropertySheet));
+
+                if (!sheet.IsSystemPropertySheet)
+                {
+                    // 1. The thing is that VCPropertySheet and VCConfiguration have more-or-less
+                    //    identical interfaces. So we should be able to merge them fairly easily.
+                    //
+                    // 2. We should try multiple layers of inheritance
+
+                    IVCCollection toolsInSheet = Utils.call(() => (sheet.Tools as IVCCollection));
+                    VCCLCompilerTool compilerToolInSheet = Utils.call(() => (toolsInSheet.Item("VCCLCompilerTool") as VCCLCompilerTool));
+
+                    // And extract various details from it...
+                    parseCompilerSettings_IncludePath(vcConfiguration, compilerToolInSheet, configurationInfo);
+                    parseCompilerSettings_PreprocessorDefinitions(vcConfiguration, compilerToolInSheet, configurationInfo);
+                    parseCompilerSettings_CompilerFlags(vcConfiguration, compilerToolInSheet, configurationInfo);
+                }
+            }
         }
 
         /// <summary>
