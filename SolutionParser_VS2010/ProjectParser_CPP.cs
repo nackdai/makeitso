@@ -75,6 +75,8 @@ namespace SolutionParser_VS2010
         /// </summary>
         private void parseProject_Configurations()
         {
+            MakeItSoConfig_Project projectSettings = MakeItSoConfig.Instance.getProjectConfig(m_projectInfo.Name);
+
             // We loop through the collection of configurations for the project...
             IVCCollection configurations = Utils.call(() => (m_vcProject.Configurations as IVCCollection));
             int numConfigurations = Utils.call(() => (configurations.Count));
@@ -83,7 +85,11 @@ namespace SolutionParser_VS2010
                 // We parse this configuration, and add the parsed data to the collection
                 // for this project...
                 VCConfiguration vcConfiguration = Utils.call(() => (configurations.Item(i) as VCConfiguration));
-                parseConfiguration(vcConfiguration);
+
+                if (projectSettings.configurationShouldBeRemoved(vcConfiguration.Name) == false)
+                {
+                    parseConfiguration(vcConfiguration);
+                }
             }
         }
 

@@ -85,6 +85,15 @@ namespace MakeItSoLib
         }
 
         /// <summary>
+        /// Returns true if the configuration name passed in should
+        /// be removed from the project.
+        /// </summary>
+        public bool configurationShouldBeRemoved(string configuration)
+        {
+            return m_configurationToRemove.Contains(configuration);
+        }
+
+        /// <summary>
         /// Returns the config for the configuration passed in.
         /// </summary>
         public MakeItSoConfig_Configuration getConfiguration(string configurationName)
@@ -168,6 +177,7 @@ namespace MakeItSoLib
             parseConfig_Compilers(configNode);
             parseConfig_FolderPrefixes(configNode);
             parseConfig_Misc(configNode);
+            parseConfig_Configuration(configNode);
         }
 
         #endregion
@@ -378,6 +388,22 @@ namespace MakeItSoLib
         }
 
         /// <summary>
+        /// Parses the config file for configurations to be removed
+        /// for this project.
+        /// </summary>
+        private void parseConfig_Configuration(XmlNode configNode)
+        {
+            // We find 'RemoveConfiguration' nodes...
+            XmlNodeList removeConfigurationNodes = configNode.SelectNodes("RemoveConfiguration");
+            foreach (XmlNode removeConfigurationNode in removeConfigurationNodes)
+            {
+                XmlAttribute configAttribute = removeConfigurationNode.Attributes["config"];
+                if (configAttribute == null) continue;
+                addCongurationToRemove(configAttribute.Value);
+            }
+        }
+
+        /// <summary>
         /// Adds the library passed in to the list to remove from the
         /// project we're holding config for.
         /// </summary>
@@ -413,6 +439,15 @@ namespace MakeItSoLib
             m_includePathsToRemove.Add(absolutePath);
         }
 
+        /// <summary>
+        /// Add the configuration name in to the list to remove from the
+        /// project we're holding config for.
+        /// </summary>
+        private void addCongurationToRemove(string configuration)
+        {
+            m_configurationToRemove.Add(configuration);
+        }
+
         #endregion
 
         #region Private data
@@ -436,6 +471,9 @@ namespace MakeItSoLib
 
         // Collection of compiler flags to remove...
         private HashSet<string> m_compilerFlagsToRemove = new HashSet<string>();
+
+        // Collection of coniguration name to remove...
+        private HashSet<string> m_configurationToRemove = new HashSet<string>();
 
         // Config for specific configurations (debug, release) in this project as a map of:
         // Configuration-name => config for the configuration

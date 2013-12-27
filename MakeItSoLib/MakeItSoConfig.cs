@@ -48,14 +48,21 @@ namespace MakeItSoLib
                 // as paths that we store are relative to the solution root...
                 m_solutionRootFolder = Environment.CurrentDirectory;
 
+                m_rootFolder = Environment.CurrentDirectory;
+
                 // We check for a solution in the current folder...
                 findDefaultSolution();
 
+#if false
                 // We parse the command line and the config file (if there is one).
                 // Note: We parse the command-line after the file, as command-line 
                 //       settings may override config settings.
                 parseConfigFile();
                 parseCommandLine(args);
+#else
+                parseCommandLine(args);
+                parseConfigFile();
+#endif
             }
             catch (Exception ex)
             {
@@ -199,6 +206,13 @@ namespace MakeItSoLib
                             parseCommandLine_BuildArgs(value);
                             break;
 
+                        case "-config":
+                            m_configFile = value;
+                            m_configFile = Path.Combine(m_rootFolder, m_configFile);
+                            m_configFile = Path.GetFullPath(m_configFile);
+                            m_configFile = m_configFile.ToLower();
+                            break;
+
                         default:
                             showHelp = true;
                             break;
@@ -260,15 +274,29 @@ namespace MakeItSoLib
             m_buildArguments = Utils.split(value, ',');
         }
 
+        private string m_configFile;
+
         /// <summary>
         /// We parse the MakeItSo.config file.
         /// </summary>
         private void parseConfigFile()
         {
             string configFile = "MakeItSo.config";
+            configFile = Path.Combine(m_rootFolder, configFile);
+            configFile = Path.GetFullPath(configFile);
+            configFile = configFile.ToLower();
+
             if (File.Exists(configFile) == false)
             {
-                return;
+                if (!string.IsNullOrEmpty(m_configFile)
+                    && File.Exists(m_configFile))
+                {
+                    configFile = m_configFile;
+                }
+                else
+                {
+                    return;
+                }
             }
 
             // We read the file and parse it...
@@ -356,6 +384,8 @@ namespace MakeItSoLib
         // Config for specific projects, held as a map of:
         // Project-name => config for that project
         private Dictionary<string, MakeItSoConfig_Project> m_projects = new Dictionary<string, MakeItSoConfig_Project>();
+
+        private string m_rootFolder;
 
         // The root folder of the solution...
         private string m_solutionRootFolder = "";
