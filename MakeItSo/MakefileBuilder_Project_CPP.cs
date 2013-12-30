@@ -523,7 +523,8 @@ namespace MakeItSo
                 string path = String.Format("{0}/{1}", intermediateFolder, filename);
                 if (filename.StartsWith(".."))
                 {
-                    path = String.Format("{0}/../{1}", intermediateFolder, filename);
+                    var tmp = filename.Replace("../", "");
+                    path = String.Format("{0}/{1}", intermediateFolder, tmp);
                 }
                 string objectPath = Path.ChangeExtension(path, ".o");
                 objectFiles += (objectPath + " ");
@@ -538,6 +539,7 @@ namespace MakeItSo
             string implicitlyLinkedObjectFiles = String.Format("$({0})", getImplicitlyLinkedObjectsVariableName(configurationInfo));
 
             // The link step...
+#if false
             switch (m_projectInfo.ProjectType)
             {
                 // Creates a C++ executable...
@@ -575,6 +577,42 @@ namespace MakeItSo
                     m_file.WriteLine("\tg++ {0} -shared -Wl,-soname,{1} -o {2}/{1} {3} {4}", pic, dllName, outputFolder, objectFiles, implicitlyLinkedObjectFiles);
                     break;
             }
+#else
+            switch (m_projectInfo.ProjectType)
+            {
+                // Creates a C++ executable...
+                case ProjectInfo_CPP.ProjectTypeEnum.CPP_EXECUTABLE:
+                    string libraryPath = getLibraryPathVariableName(configurationInfo);
+                    string libraries = getLibrariesVariableName(configurationInfo);
+                    string exeName = getBuildExportName(configurationInfo);
+                    m_file.WriteLine("\tg++ {0} $({1}) $({2}) -Wl,-rpath,./ -o {3}/{4}", objectFiles, libraryPath, libraries, outputFolder, exeName);
+                    break;
+
+
+                // Creates a static library...
+                case ProjectInfo_CPP.ProjectTypeEnum.CPP_STATIC_LIBRARY:
+					// We use the Target Name as the output file name if it exists
+                    var libName = getBuildExportName(configurationInfo);
+                    m_file.WriteLine("\tar rcs {0}/{1} {2} {3}", outputFolder, libName, objectFiles, implicitlyLinkedObjectFiles);
+                    break;
+
+                // Creates a DLL (shared-objects) library...
+                case ProjectInfo_CPP.ProjectTypeEnum.CPP_DLL:
+                    string dllName = getBuildExportName(configurationInfo);
+                    string pic;
+                    if(MakeItSoConfig.Instance.IsCygwinBuild == true)
+                    {
+                        pic = "";
+                    }
+                    else
+                    {
+                        pic = "-fPIC";
+                    }
+                
+                    m_file.WriteLine("\tg++ {0} -shared -Wl,-soname,{1} -o {2}/{1} {3} {4}", pic, dllName, outputFolder, objectFiles, implicitlyLinkedObjectFiles);
+                    break;
+            }
+#endif
 
             // The post-build step, if there is one...
             if (configurationInfo.PostBuildEvent != "")
@@ -583,6 +621,46 @@ namespace MakeItSo
             }
 
             m_file.WriteLine("");
+        }
+
+        string exportName = "";
+
+        private string getBuildExportName(ProjectConfigurationInfo_CPP configurationInfo)
+        {
+            if (string.IsNullOrEmpty(this.exportName))
+            {
+                switch (m_projectInfo.ProjectType)
+                {
+                    // Creates a C++ executable...
+                    case ProjectInfo_CPP.ProjectTypeEnum.CPP_EXECUTABLE:
+                        return string.Format("{0}.exe", m_projectInfo.Name);
+
+                    // Creates a static library...
+                    case ProjectInfo_CPP.ProjectTypeEnum.CPP_STATIC_LIBRARY:
+                        // We use the Target Name as the output file name if it exists
+                        if (configurationInfo != null && configurationInfo.TargetName != "")
+                        {
+                            return string.Format("lib{0}.a", configurationInfo.TargetName);
+                        }
+                        else
+                        {
+                            return string.Format("lib{0}.a", m_projectInfo.Name);
+                        }
+
+                    // Creates a DLL (shared-objects) library...
+                    case ProjectInfo_CPP.ProjectTypeEnum.CPP_DLL:
+                        if (MakeItSoConfig.Instance.IsCygwinBuild == true)
+                        {
+                            return string.Format("lib{0}.dll", m_projectInfo.Name);
+                        }
+                        else
+                        {
+                            return string.Format("lib{0}.so", m_projectInfo.Name);
+                        }
+                }
+            }
+
+            return this.exportName;
         }
 
         /// <summary>
@@ -620,7 +698,8 @@ namespace MakeItSo
                 string path = String.Format("{0}/{1}", intermediateFolder, filename);
                 if (filename.StartsWith(".."))
                 {
-                    path = String.Format("{0}/../{1}", intermediateFolder, filename);
+                    var tmp = filename.Replace("../", "");
+                    path = String.Format("{0}/{1}", intermediateFolder, tmp);
                 }
                 string objectPath = Path.ChangeExtension(path, ".o");
                 string dependenciesPath = Path.ChangeExtension(path, ".d");
@@ -642,6 +721,25 @@ namespace MakeItSo
             }
         }
 
+        private void getIntermediateDirectories(List<string> result)
+        {
+            foreach (var file in this.m_projectInfo.getFiles())
+            {
+                var dir = Path.GetDirectoryName(file);
+                dir = dir.Replace(@"..\", "");
+                dir = dir.Replace(@"../", "");
+                dir = dir.Replace(@"\", "/");
+
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    if (!result.Contains(dir))
+                    {
+                        result.Add(dir);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Creates a target that creates the intermediate and output folders.
         /// </summary>
@@ -654,7 +752,19 @@ namespace MakeItSo
             {
                 string intermediateFolder = getIntermediateFolder(configuration);
                 string outputFolder = getOutputFolder(configuration);
+
+#if false
                 m_file.WriteLine("\tmkdir -p {0}/source", intermediateFolder);
+#else
+                var intermadiateDirs = new List<string>();
+                getIntermediateDirectories(intermadiateDirs);
+
+                foreach (var dir in intermadiateDirs)
+                {
+                    m_file.WriteLine("\tmkdir -p {0}/{1}", intermediateFolder, dir);
+                }
+#endif
+
                 if (outputFolder != intermediateFolder)
                 {
                     m_file.WriteLine("\tmkdir -p {0}", getOutputFolder(configuration));
@@ -676,12 +786,38 @@ namespace MakeItSo
                 string intermediateFolder = getIntermediateFolder(configuration);
                 string outputFolder = getOutputFolder(configuration);
 
+#if false
                 // Object files...
                 m_file.WriteLine("\trm -f {0}/*.o", intermediateFolder);
 
                 // Dependencies files...
                 m_file.WriteLine("\trm -f {0}/*.d", intermediateFolder);
+#else
+                var intermadiateDirs = new List<string>();
+                getIntermediateDirectories(intermadiateDirs);
 
+                if (intermadiateDirs.Count > 0)
+                {
+                    foreach (var dir in intermadiateDirs)
+                    {
+                        // Object files...
+                        m_file.WriteLine("\trm -f {0}/{1}/*.o", intermediateFolder, dir);
+
+                        // Dependencies files...
+                        m_file.WriteLine("\trm -f {0}/{1}/*.d", intermediateFolder, dir);
+                    }
+                }
+                else
+                {
+                    // Object files...
+                    m_file.WriteLine("\trm -f {0}/*.o", intermediateFolder);
+
+                    // Dependencies files...
+                    m_file.WriteLine("\trm -f {0}/*.d", intermediateFolder);
+                }
+#endif
+
+#if false
                 // Static libraries...
                 m_file.WriteLine("\trm -f {0}/*.a", outputFolder);
 
@@ -691,7 +827,10 @@ namespace MakeItSo
 
                 // Executables...
                 m_file.WriteLine("\trm -f {0}/*.exe", outputFolder);
-
+#else
+                var cleanFileName = getBuildExportName(null);
+                m_file.WriteLine("\trm -f {0}/{1}", outputFolder, cleanFileName);
+#endif
             }
             m_file.WriteLine("");
         }
