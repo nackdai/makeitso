@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Xml;
+using System.Text.RegularExpressions;
 
 namespace MakeItSoLib
 {
@@ -94,6 +95,32 @@ namespace MakeItSoLib
         }
 
         /// <summary>
+        /// Returns true if the files or directories passed in should
+        /// be removed from the project.
+        /// </summary>
+        public bool filesOrDirectoriesShouldBeRemoved(string path)
+        {
+            foreach (var item in this.m_filesAndDirsToRemove)
+            {
+                try
+                {
+                    var r = new Regex(item);
+                    if (r.IsMatch(path))
+                    {
+                        return true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    // TODO
+                    Console.WriteLine(e.Message);
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Returns the config for the configuration passed in.
         /// </summary>
         public MakeItSoConfig_Configuration getConfiguration(string configurationName)
@@ -178,6 +205,7 @@ namespace MakeItSoLib
             parseConfig_FolderPrefixes(configNode);
             parseConfig_Misc(configNode);
             parseConfig_Configuration(configNode);
+            parseConfig_FilesAndDirectories(configNode);
         }
 
         #endregion
@@ -404,6 +432,21 @@ namespace MakeItSoLib
         }
 
         /// <summary>
+        /// Parses the config file for files and directories to be removed
+        /// for this project.
+        /// </summary>
+        private void parseConfig_FilesAndDirectories(XmlNode configNode)
+        {
+            XmlNodeList removeFilesAndDirsNodes = configNode.SelectNodes("RemoveFilesAndDirectories");
+            foreach (XmlNode removeFilesAndDirsNode in removeFilesAndDirsNodes)
+            {
+                XmlAttribute configAttribute = removeFilesAndDirsNode.Attributes["regex"];
+                if (configAttribute == null) continue;
+                addFilesAndDirectoriesToRemove(configAttribute.Value);
+            }
+        }
+
+        /// <summary>
         /// Adds the library passed in to the list to remove from the
         /// project we're holding config for.
         /// </summary>
@@ -448,6 +491,15 @@ namespace MakeItSoLib
             m_configurationToRemove.Add(configuration);
         }
 
+        /// <summary>
+        /// Add path (files and directories) in to the list to remove from the 
+        /// project we're holding config for.
+        /// </summary>
+        private void addFilesAndDirectoriesToRemove(string path)
+        {
+            this.m_filesAndDirsToRemove.Add(path);
+        }
+
         #endregion
 
         #region Private data
@@ -474,6 +526,9 @@ namespace MakeItSoLib
 
         // Collection of coniguration name to remove...
         private HashSet<string> m_configurationToRemove = new HashSet<string>();
+
+        // Collection of files and directories to remove...
+        private HashSet<string> m_filesAndDirsToRemove = new HashSet<string>();
 
         // Config for specific configurations (debug, release) in this project as a map of:
         // Configuration-name => config for the configuration

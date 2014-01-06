@@ -515,20 +515,25 @@ namespace MakeItSo
                 dependencies += (ruleTargetName + " ");
             }
 
+            var projectSettings = MakeItSoConfig.Instance.getProjectConfig(m_projectInfo.Name);
+
             // The object files the target depends on...
             string intermediateFolder = getIntermediateFolder(configurationInfo);
             string objectFiles = "";
             foreach (string filename in m_projectInfo.getFiles())
             {
-                string path = String.Format("{0}/{1}", intermediateFolder, filename);
-                if (filename.StartsWith(".."))
+                if (!projectSettings.filesOrDirectoriesShouldBeRemoved(filename))
                 {
-                    var tmp = filename.Replace("../", "");
-                    path = String.Format("{0}/{1}", intermediateFolder, tmp);
+                    string path = String.Format("{0}/{1}", intermediateFolder, filename);
+                    if (filename.StartsWith(".."))
+                    {
+                        var tmp = filename.Replace("../", "");
+                        path = String.Format("{0}/{1}", intermediateFolder, tmp);
+                    }
+                    string objectPath = Path.ChangeExtension(path, ".o");
+                    objectFiles += (objectPath + " ");
+                    dependencies += (objectPath + " ");
                 }
-                string objectPath = Path.ChangeExtension(path, ".o");
-                objectFiles += (objectPath + " ");
-                dependencies += (objectPath + " ");
             }
 
             // We write the dependencies...
@@ -693,6 +698,13 @@ namespace MakeItSo
             // We write a section of the makefile to compile each file...
             foreach (string filename in m_projectInfo.getFiles())
             {
+                var projectSettings = MakeItSoConfig.Instance.getProjectConfig(m_projectInfo.Name);
+
+                if (projectSettings.filesOrDirectoriesShouldBeRemoved(filename))
+                {
+                    continue;
+                }
+
                 // We work out the filename, the object filename and the 
                 // dependencies filename...
                 string path = String.Format("{0}/{1}", intermediateFolder, filename);
@@ -756,12 +768,17 @@ namespace MakeItSo
 #if false
                 m_file.WriteLine("\tmkdir -p {0}/source", intermediateFolder);
 #else
+                var projectSettings = MakeItSoConfig.Instance.getProjectConfig(m_projectInfo.Name);
+
                 var intermadiateDirs = new List<string>();
                 getIntermediateDirectories(intermadiateDirs);
 
                 foreach (var dir in intermadiateDirs)
                 {
-                    m_file.WriteLine("\tmkdir -p {0}/{1}", intermediateFolder, dir);
+                    if (!projectSettings.filesOrDirectoriesShouldBeRemoved(dir))
+                    {
+                        m_file.WriteLine("\tmkdir -p {0}/{1}", intermediateFolder, dir);
+                    }
                 }
 #endif
 
@@ -793,6 +810,8 @@ namespace MakeItSo
                 // Dependencies files...
                 m_file.WriteLine("\trm -f {0}/*.d", intermediateFolder);
 #else
+                var projectSettings = MakeItSoConfig.Instance.getProjectConfig(m_projectInfo.Name);
+
                 var intermadiateDirs = new List<string>();
                 getIntermediateDirectories(intermadiateDirs);
 
@@ -800,11 +819,14 @@ namespace MakeItSo
                 {
                     foreach (var dir in intermadiateDirs)
                     {
-                        // Object files...
-                        m_file.WriteLine("\trm -f {0}/{1}/*.o", intermediateFolder, dir);
+                        if (!projectSettings.filesOrDirectoriesShouldBeRemoved(dir))
+                        {
+                            // Object files...
+                            m_file.WriteLine("\trm -f {0}/{1}/*.o", intermediateFolder, dir);
 
-                        // Dependencies files...
-                        m_file.WriteLine("\trm -f {0}/{1}/*.d", intermediateFolder, dir);
+                            // Dependencies files...
+                            m_file.WriteLine("\trm -f {0}/{1}/*.d", intermediateFolder, dir);
+                        }
                     }
                 }
                 else
