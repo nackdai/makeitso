@@ -217,6 +217,68 @@ namespace SolutionParser_VS2010
             // We find if this library is set to link together other libraries it depends on...
             // (We are assuming that all configurations of the project have the same link-library-dependencies setting.)
             m_projectInfo.LinkLibraryDependencies = Utils.call(() => (librarianTool.LinkLibraryDependencies));
+
+            parseLibrarianSettings_LibraryPath(vcConfiguration, librarianTool, configurationInfo);
+            parseLibrarianSettings_Libraries(vcConfiguration, librarianTool, configurationInfo);
+        }
+
+        /// <summary>
+        /// Finds the library path for the configuration passed in.
+        /// </summary>
+        private void parseLibrarianSettings_LibraryPath(VCConfiguration vcConfiguration, VCLibrarianTool librarianTool, ProjectConfigurationInfo_CPP configurationInfo)
+        {
+            // We:
+            // 1. Read the additional library paths (which are in a semi-colon-delimited string)
+            // 2. Split it into separate paths
+            // 3. Resolve any symbols
+            // 4. Make sure all paths are relative to the project root folder
+
+            // 1 & 2...
+            string strAdditionalLibraryDirectories = Utils.call(() => (librarianTool.AdditionalLibraryDirectories));
+            if (strAdditionalLibraryDirectories == null)
+            {
+                return;
+            }
+
+            List<string> additionalLibraryDirectories = Utils.split(strAdditionalLibraryDirectories, ';', ',');
+            foreach (string additionalLibraryDirectory in additionalLibraryDirectories)
+            {
+                // The string may be quoted. We need to remove the quotes...
+                string unquotedLibraryDirectory = additionalLibraryDirectory.Trim('"');
+                if (unquotedLibraryDirectory == "")
+                {
+                    continue;
+                }
+
+                // 3 & 4...
+                string resolvedPath = Utils.call(() => (vcConfiguration.Evaluate(unquotedLibraryDirectory)));
+                if (resolvedPath != "")
+                {
+                    string relativePath = Utils.makeRelativePath(m_projectInfo.RootFolderAbsolute, resolvedPath);
+                    configurationInfo.addLibraryPath(relativePath);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Finds the collection of additional libraries to link into this project.
+        /// </summary>
+        private void parseLibrarianSettings_Libraries(VCConfiguration vcConfiguration, VCLibrarianTool librarianTool, ProjectConfigurationInfo_CPP configurationInfo)
+        {
+            // The collection of libraries is stored in a space-delimited string...
+            string strAdditionalLibraries = Utils.call(() => (librarianTool.AdditionalDependencies));
+            if (strAdditionalLibraries == null)
+            {
+                return;
+            }
+
+            List<string> additionalLibraries = Utils.split(strAdditionalLibraries, ' ');
+            foreach (string additionalLibrary in additionalLibraries)
+            {
+                // We add the library to the project...
+                string rawName = Path.GetFileNameWithoutExtension(additionalLibrary);
+                configurationInfo.addLibraryRawName(rawName);
+            }
         }
 
         /// <summary>
@@ -238,6 +300,31 @@ namespace SolutionParser_VS2010
             parseLinkerSettings_LibraryPath(vcConfiguration, linkerTool, configurationInfo);
             parseLinkerSettings_Libraries(vcConfiguration, linkerTool, configurationInfo);
             parseLinkerSettings_Misc(vcConfiguration, linkerTool, configurationInfo);
+
+            IVCCollection sheets = Utils.call(() => (vcConfiguration.PropertySheets as IVCCollection));
+            int numSheets = Utils.call(() => (sheets.Count));
+            for (int i = 1; i <= numSheets; ++i)
+            {
+                VCPropertySheet sheet = Utils.call(() => (sheets.Item(i) as VCPropertySheet));
+
+                if (!sheet.IsSystemPropertySheet)
+                {
+                    // 1. The thing is that VCPropertySheet and VCConfiguration have more-or-less
+                    //    identical interfaces. So we should be able to merge them fairly easily.
+                    //
+                    // 2. We should try multiple layers of inheritance
+
+                    IVCCollection toolsInSheet = Utils.call(() => (sheet.Tools as IVCCollection));
+                    VCLinkerTool linkerToolInSheet = Utils.call(() => (toolsInSheet.Item("VCLinkerTool") as VCLinkerTool));
+
+                    // And extract various details from it...
+                    if (linkerToolInSheet != null)
+                    {
+                        parseLinkerSettings_LibraryPath(vcConfiguration, linkerToolInSheet, configurationInfo);
+                        parseLinkerSettings_Libraries(vcConfiguration, linkerToolInSheet, configurationInfo);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -351,9 +438,12 @@ namespace SolutionParser_VS2010
                     VCCLCompilerTool compilerToolInSheet = Utils.call(() => (toolsInSheet.Item("VCCLCompilerTool") as VCCLCompilerTool));
 
                     // And extract various details from it...
-                    parseCompilerSettings_IncludePath(vcConfiguration, compilerToolInSheet, configurationInfo);
-                    parseCompilerSettings_PreprocessorDefinitions(vcConfiguration, compilerToolInSheet, configurationInfo);
-                    //parseCompilerSettings_CompilerFlags(vcConfiguration, compilerToolInSheet, configurationInfo);
+                    if (compilerToolInSheet != null)
+                    {
+                        parseCompilerSettings_IncludePath(vcConfiguration, compilerToolInSheet, configurationInfo);
+                        parseCompilerSettings_PreprocessorDefinitions(vcConfiguration, compilerToolInSheet, configurationInfo);
+                        //parseCompilerSettings_CompilerFlags(vcConfiguration, compilerToolInSheet, configurationInfo);
+                    }
                 }
             }
         }

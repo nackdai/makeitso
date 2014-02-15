@@ -131,6 +131,7 @@ namespace MakeItSo
         /// </summary>
         private void createAllProjectsTarget()
         {
+#if false
             // We create a target like:
             //   .PHONY: all_projects
             //   all_projects: [project1] [project2] [project3] 
@@ -147,6 +148,45 @@ namespace MakeItSo
             }
             m_file.WriteLine(target);
             m_file.WriteLine("");
+#else
+            // Get a project info.
+            var projectInfo = m_solution.getProjectInfos()[0] as ProjectInfo_CPP;
+
+            {
+                // We create a target like:
+                //   .PHONY: all_projects
+                //   all_projects: [project1] [project2] [project3] 
+                m_file.WriteLine("# Builds all the projects in the solution...");
+                m_file.WriteLine(".PHONY: all_projects");
+
+                string targetConfig = "all_projects: ";
+
+                foreach (var config in projectInfo.getConfigurationInfos())
+                {
+                    targetConfig += config.Name + " ";
+                }
+
+                m_file.WriteLine(targetConfig);
+                m_file.WriteLine("");
+            }
+
+            foreach (var config in projectInfo.getConfigurationInfos())
+            {
+                m_file.WriteLine(".PHONY: {0}", config.Name);
+                string target = config.Name + ": ";
+
+                foreach (var info in m_solution.getProjectInfos())
+                {
+                    if (MakeItSoConfig.Instance.ignoreProject(info.Name) == false)
+                    {
+                        target += (info.Name + "_" + config.Name + " ");
+                    }
+                }
+
+                m_file.WriteLine(target);
+                m_file.WriteLine("");
+            }
+#endif
         }
 
 
@@ -200,6 +240,7 @@ namespace MakeItSo
             //       make --directory=[project-folder] -f [makefile-name]
 
             m_file.WriteLine("# Builds project '{0}'...", projectInfo.Name);
+#if false
             m_file.WriteLine(".PHONY: {0}", projectInfo.Name);
 
             string dependencies = String.Format("{0}: ", projectInfo.Name);
@@ -216,6 +257,29 @@ namespace MakeItSo
             string makefile = projectInfo.Name + ".makefile";
             m_file.WriteLine("\tmake --directory={0} --file={1}", directory, makefile);
             m_file.WriteLine("");
+#else
+            var info = projectInfo as ProjectInfo_CPP;
+
+            foreach (var config in info.getConfigurationInfos())
+            {
+                m_file.WriteLine(".PHONY: {0}_{1}", projectInfo.Name, config.Name);
+
+                string dependencies = String.Format("{0}_{1}: ", projectInfo.Name, config.Name);
+                foreach (ProjectInfo requiredProject in projectInfo.getRequiredProjects())
+                {
+                    if (MakeItSoConfig.Instance.ignoreProject(requiredProject.Name) == false)
+                    {
+                        dependencies += (requiredProject.Name + " ");
+                    }
+                }
+                m_file.WriteLine(dependencies);
+
+                string directory = Utils.quote(projectInfo.RootFolderRelative);
+                string makefile = projectInfo.Name + ".makefile";
+                m_file.WriteLine("\tmake --directory={0} --file={1} {2}", directory, makefile, config.Name);
+                m_file.WriteLine("");
+            }
+#endif
         }
 
         #endregion
