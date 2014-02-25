@@ -300,7 +300,7 @@ namespace MakeItSo
                 // to the order than libraries are declared...
                 if (libraries != "")
                 {
-                    libraries = String.Format("-Wl,--start-group {0} -Wl,--end-group", libraries);
+                    libraries = String.Format("-Wl,--no-as-needed -Wl,--start-group {0} -Wl,--end-group", libraries);
                 }
 
                 // We write the variable...
