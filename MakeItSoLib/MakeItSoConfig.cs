@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Xml;
+using System.Reflection;
 
 namespace MakeItSoLib
 {
@@ -353,6 +354,8 @@ namespace MakeItSoLib
                 MakeItSoConfig_Project projectConfig = new MakeItSoConfig_Project(this);
                 projectConfig.parseConfig(projectNode);
                 m_projects.Add(projectName, projectConfig);
+
+                applyAllProjectsConfig(projectConfig);
             }
         }
 
@@ -366,6 +369,62 @@ namespace MakeItSoLib
             if (allProjectsNode != null)
             {
                 m_allProjects.parseConfig(allProjectsNode);
+            }
+
+            applyAllProjectsConfig();
+        }
+
+        static BindingFlags reflectionFlags = (BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+        private void applyField(object srcTarget, object dstTarget)
+        {
+            var type = dstTarget.GetType();
+            var fields = type.GetFields(reflectionFlags);
+
+            var targetFiledType = typeof(HashSet<string>);
+
+            foreach (var field in fields)
+            {
+                if (field.FieldType == targetFiledType)
+                {
+                    var src = (HashSet<string>)type.GetField(field.Name, reflectionFlags).GetValue(srcTarget);
+                    var dst = (HashSet<string>)type.GetField(field.Name, reflectionFlags).GetValue(dstTarget);
+
+                    foreach (var value in src)
+                    {
+                        dst.Add(value);
+                    }
+                }
+                else if (field.Name == "m_configurations")
+                {
+                    var src = (Dictionary<string, MakeItSoConfig_Configuration>)type.GetField(field.Name, reflectionFlags).GetValue(srcTarget);
+                    var dst = (Dictionary<string, MakeItSoConfig_Configuration>)type.GetField(field.Name, reflectionFlags).GetValue(dstTarget);
+
+                    foreach (var key in src.Keys)
+                    {
+                        if (dst.ContainsKey(key))
+                        {
+                            var srcValue = src[key];
+                            var dstValue = dst[key];
+
+                            applyField(srcValue, dstValue);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void applyAllProjectsConfig(MakeItSoConfig_Project projConfig)
+        {
+            applyField(m_allProjects, projConfig);
+        }
+
+        private void applyAllProjectsConfig()
+        {
+            foreach (var project in m_projects.Values)
+            {
+                applyAllProjectsConfig(project);
             }
         }
 
