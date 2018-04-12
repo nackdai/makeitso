@@ -55,6 +55,10 @@ namespace MakeItSo
                         parser = loadParser("SolutionParser_VS2010.dll");
                         break;
 
+                    case 12:
+                        parser = loadParser("SolutionParser_VS2015.dll");
+                        break;
+
                     default:
                         throw new Exception("MakeItSo does not support this version of Visual Studio");
                 }
