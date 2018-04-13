@@ -338,7 +338,33 @@ namespace SolutionParser_VS2010
             m_projectInfo.LinkLibraryDependencies = Utils.call(() => (linkerTool.LinkLibraryDependencies));
 
             // Generate debug info...
-            bool debugInfo = Utils.call(() => (linkerTool.GenerateDebugInformation));
+            bool debugInfo = false;
+
+            try
+            {
+                debugInfo = Utils.call(() => (linkerTool.GenerateDebugInformation));
+            }
+            catch (Exception ex)
+            {
+                // TODO
+                // Work around fix...
+                // VS2015 or upper support /DEBUG:FASTLINK option.
+                // But, VCLinkerTool don't support /DEBUG:FASTLINK.
+                // GenerateDebugInformation has string "DebugFastLink", so, if we access GenerateDebugInformation, VCLinkerTool throw exception.
+                // Visual Studio specifes the option in property sheed which is Micorsoft.Cpp.Win32.user or Microsoft.Cpp.x64.user.
+                // It seems that it is difficult to modify the option.
+                // So, I catch the exception and check message, if message includes "DebugFastLink", I handle GenerateDebugInformation returns true.
+
+                if (ex.Message.Contains("DebugFastLink"))
+                {
+                    debugInfo = true;
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
+
             if (debugInfo == true
                 &&
                 configurationInfo.getPreprocessorDefinitions().Contains("NDEBUG") == false)
