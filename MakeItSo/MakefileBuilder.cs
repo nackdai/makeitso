@@ -39,7 +39,9 @@ namespace MakeItSo
         /// </summary>
         public static void createMakefile(SolutionInfo solution)
         {
-            new MakefileBuilder(solution);
+            var builder = new MakefileBuilder(solution);
+
+            builder.copyProjectMakefiles();
         }
 
         #endregion
@@ -99,6 +101,19 @@ namespace MakeItSo
             foreach (ProjectInfo projectInfo in m_solution.getProjectInfos())
             {
                 createProjectMakefile(projectInfo);
+            }
+        }
+
+        private void copyProjectMakefiles()
+        {
+            string target = m_solution.RootFolderAbsolute;
+
+            foreach (ProjectInfo projectInfo in m_solution.getProjectInfos())
+            {
+                string src = String.Format("{0}/{1}.makefile", projectInfo.RootFolderAbsolute, projectInfo.Name);
+                string dst = String.Format("{0}/{1}.makefile", target, projectInfo.Name);
+
+                System.IO.File.Copy(src, dst, true);
             }
         }
 
