@@ -114,6 +114,15 @@ namespace SolutionParser_VS2010
             configurationInfo.OutputFolder = parseConfiguration_Folder(vcConfiguration, () => (vcConfiguration.OutputDirectory));
             configurationInfo.TargetName = parseConfiguration_TargetName(vcConfiguration);
 
+            // Convert to relative path.
+            {
+                var url1 = new Uri(m_solutionRootFolder);
+                var url2 = new Uri(url1, configurationInfo.OutputFolder);
+
+                var relative = url1.MakeRelativeUri(url2);
+                configurationInfo.OutputFolder = relative.ToString();
+            }
+
             // We get compiler settings, such as the include path and 
             // preprocessor definitions...
             parseConfiguration_CompilerSettings(vcConfiguration, configurationInfo);
