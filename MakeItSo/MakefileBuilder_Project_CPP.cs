@@ -645,22 +645,42 @@ namespace MakeItSo
                         // We use the Target Name as the output file name if it exists
                         if (configurationInfo != null && configurationInfo.TargetName != "")
                         {
-                            return string.Format("lib{0}.a", configurationInfo.TargetName);
+                            var name = configurationInfo.TargetName;
+                            if (name.StartsWith("lib"))
+                            {
+                                name = name.Remove(0, 3);
+                            }
+
+                            return string.Format("lib{0}.a", name);
                         }
                         else
                         {
-                            return string.Format("lib{0}.a", m_projectInfo.Name);
+                            var name = m_projectInfo.Name;
+                            if (name.StartsWith("lib"))
+                            {
+                                name = name.Remove(0, 3);
+                            }
+
+                            return string.Format("lib{0}.a", name);
                         }
 
                     // Creates a DLL (shared-objects) library...
                     case ProjectInfo_CPP.ProjectTypeEnum.CPP_DLL:
-                        if (MakeItSoConfig.Instance.IsCygwinBuild == true)
                         {
-                            return string.Format("lib{0}.dll", m_projectInfo.Name);
-                        }
-                        else
-                        {
-                            return string.Format("lib{0}.so", m_projectInfo.Name);
+                            var name = m_projectInfo.Name;
+                            if (name.StartsWith("lib"))
+                            {
+                                name = name.Remove(0, 3);
+                            }
+
+                            if (MakeItSoConfig.Instance.IsCygwinBuild == true)
+                            {
+                                return string.Format("lib{0}.dll", name);
+                            }
+                            else
+                            {
+                                return string.Format("lib{0}.so", name);
+                            }
                         }
                 }
             }
