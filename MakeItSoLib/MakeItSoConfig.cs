@@ -352,10 +352,11 @@ namespace MakeItSoLib
 
                 // We create a config object for the project, and parse it...
                 MakeItSoConfig_Project projectConfig = new MakeItSoConfig_Project(this);
-                projectConfig.parseConfig(projectNode);
-                m_projects.Add(projectName, projectConfig);
 
                 applyAllProjectsConfig(projectConfig);
+
+                projectConfig.parseConfig(projectNode);
+                m_projects.Add(projectName, projectConfig);
             }
         }
 
@@ -395,6 +396,11 @@ namespace MakeItSoLib
                     {
                         dst.Add(value);
                     }
+                }
+                else if (field.FieldType == typeof(string))
+                {
+                    var src = (string)type.GetField(field.Name, reflectionFlags).GetValue(srcTarget);
+                    type.GetField(field.Name, reflectionFlags).SetValue(dstTarget, src);
                 }
                 else if (field.Name == "m_configurations")
                 {

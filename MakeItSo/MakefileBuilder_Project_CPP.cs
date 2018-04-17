@@ -645,21 +645,29 @@ namespace MakeItSo
                         // We use the Target Name as the output file name if it exists
                         if (configurationInfo != null && configurationInfo.TargetName != "")
                         {
+#if false
                             var name = configurationInfo.TargetName;
                             if (name.StartsWith("lib"))
                             {
                                 name = name.Remove(0, 3);
                             }
+#else
+                            var name = Utils.convertLinuxLibraryNameToRawName(configurationInfo.TargetName);
+#endif
 
                             return string.Format("lib{0}.a", name);
                         }
                         else
                         {
+#if false
                             var name = m_projectInfo.Name;
                             if (name.StartsWith("lib"))
                             {
                                 name = name.Remove(0, 3);
                             }
+#else
+                            var name = Utils.convertLinuxLibraryNameToRawName(m_projectInfo.Name);
+#endif
 
                             return string.Format("lib{0}.a", name);
                         }
@@ -667,11 +675,15 @@ namespace MakeItSo
                     // Creates a DLL (shared-objects) library...
                     case ProjectInfo_CPP.ProjectTypeEnum.CPP_DLL:
                         {
+#if false
                             var name = m_projectInfo.Name;
                             if (name.StartsWith("lib"))
                             {
                                 name = name.Remove(0, 3);
                             }
+#else
+                            var name = Utils.convertLinuxLibraryNameToRawName(m_projectInfo.Name);
+#endif
 
                             if (MakeItSoConfig.Instance.IsCygwinBuild == true)
                             {

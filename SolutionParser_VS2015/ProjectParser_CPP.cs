@@ -285,7 +285,11 @@ namespace SolutionParser_VS2010
             foreach (string additionalLibrary in additionalLibraries)
             {
                 // We add the library to the project...
+#if false
                 string rawName = Path.GetFileNameWithoutExtension(additionalLibrary);
+#else
+                var rawName = Utils.convertLinuxLibraryNameToRawName(additionalLibrary);
+#endif
                 configurationInfo.addLibraryRawName(rawName);
             }
         }
@@ -436,7 +440,11 @@ namespace SolutionParser_VS2010
             foreach (string additionalLibrary in additionalLibraries)
             {
                 // We add the library to the project...
+#if false
                 string rawName = Path.GetFileNameWithoutExtension(additionalLibrary);
+#else
+                var rawName = Utils.convertLinuxLibraryNameToRawName(additionalLibrary);
+#endif
                 configurationInfo.addLibraryRawName(rawName);
             }
         }
