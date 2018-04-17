@@ -41,7 +41,7 @@ namespace MakeItSo
         {
             var builder = new MakefileBuilder(solution);
 
-            builder.copyProjectMakefiles();
+            //builder.copyProjectMakefiles();
         }
 
         #endregion
