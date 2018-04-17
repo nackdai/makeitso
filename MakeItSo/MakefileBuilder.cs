@@ -231,6 +231,13 @@ namespace MakeItSo
                 if (MakeItSoConfig.Instance.ignoreProject(projectInfo.Name) == false)
                 {
                     string directory = Utils.quote(projectInfo.RootFolderRelative);
+
+                    var projectConfig = MakeItSoConfig.Instance.getProjectConfig(projectInfo.Name);
+                    if (projectConfig.isReplaceProjectRootFolderRelative())
+                    {
+                        directory = projectConfig.getReplaceProjectRootFolderRelative();
+                    }
+
                     string makefile = projectInfo.Name + ".makefile";
                     m_file.WriteLine("\tmake --directory={0} --file={1} clean", directory, makefile);
                 }
@@ -290,6 +297,13 @@ namespace MakeItSo
                 m_file.WriteLine(dependencies);
 
                 string directory = Utils.quote(projectInfo.RootFolderRelative);
+
+                var projectConfig = MakeItSoConfig.Instance.getProjectConfig(projectInfo.Name);
+                if (projectConfig.isReplaceProjectRootFolderRelative())
+                {
+                    directory = projectConfig.getReplaceProjectRootFolderRelative();
+                }
+
                 string makefile = projectInfo.Name + ".makefile";
                 m_file.WriteLine("\tmake --directory={0} --file={1} {2}", directory, makefile, config.Name);
                 m_file.WriteLine("");

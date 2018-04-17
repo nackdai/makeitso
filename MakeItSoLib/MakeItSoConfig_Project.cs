@@ -206,6 +206,8 @@ namespace MakeItSoLib
             parseConfig_Misc(configNode);
             parseConfig_Configuration(configNode);
             parseConfig_FilesAndDirectories(configNode);
+
+            parseConfig_ReplaceProjectRootFolderRelative(configNode);
         }
 
         #endregion
@@ -444,6 +446,37 @@ namespace MakeItSoLib
                 if (configAttribute == null) continue;
                 addFilesAndDirectoriesToRemove(configAttribute.Value);
             }
+        }
+
+
+        private void parseConfig_ReplaceProjectRootFolderRelative(XmlNode configNode)
+        {
+            XmlNodeList nodes = configNode.SelectNodes("ReplaceProjectRootFolderRelative");
+            foreach (XmlNode node in nodes)
+            {
+                XmlAttribute configAttribute = node.Attributes["folder"];
+                if (configAttribute == null)
+                {
+                    continue;
+                }
+
+                m_replaceProjectRootFolderRelative = configAttribute.Value;
+
+                // Replace with just only one node.
+                break;
+            }
+        }
+
+        private string m_replaceProjectRootFolderRelative = "";
+
+        public bool isReplaceProjectRootFolderRelative()
+        {
+            return m_replaceProjectRootFolderRelative.Length > 0;
+        }
+
+        public string getReplaceProjectRootFolderRelative()
+        {
+            return m_replaceProjectRootFolderRelative;
         }
 
         /// <summary>
