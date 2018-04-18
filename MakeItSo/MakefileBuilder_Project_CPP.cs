@@ -292,7 +292,14 @@ namespace MakeItSo
                 string libraries = "";
                 foreach (string libraryName in configuration.getLibraryRawNames())
                 {
-                    libraries += String.Format("-l{0} ", libraryName);
+                    if (libraryName.StartsWith("-"))
+                    {
+                        libraries += libraryName;
+                    }
+                    else
+                    {
+                        libraries += String.Format("-l{0} ", libraryName);
+                    }
                 }
 
                 // If we have some libraries, we surround them with start-group
