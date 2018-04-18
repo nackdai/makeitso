@@ -479,6 +479,31 @@ namespace MakeItSoLib
             return m_replaceProjectRootFolderRelative;
         }
 
+        private void pasereConfig_CudaVersion(XmlNode configNode)
+        {
+            XmlNodeList nodes = configNode.SelectNodes("CudaVersion");
+            foreach (XmlNode node in nodes)
+            {
+                XmlAttribute configAttribute = node.Attributes["version"];
+                if (configAttribute == null)
+                {
+                    continue;
+                }
+
+                m_cudaVersion = configAttribute.Value;
+
+                // Replace with just only one node.
+                break;
+            }
+        }
+
+        private string m_cudaVersion = "";
+
+        public string getCudaVersion()
+        {
+            return m_cudaVersion;
+        }
+
         /// <summary>
         /// Adds the library passed in to the list to remove from the
         /// project we're holding config for.
