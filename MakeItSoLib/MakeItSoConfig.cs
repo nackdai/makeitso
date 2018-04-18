@@ -357,6 +357,8 @@ namespace MakeItSoLib
 
                 projectConfig.parseConfig(projectNode);
                 m_projects.Add(projectName, projectConfig);
+
+                applyAllProjectsConfigurationField(projectConfig);
             }
         }
 
@@ -421,9 +423,42 @@ namespace MakeItSoLib
             }
         }
 
+        private void applyConfigurationsField(object srcTarget, object dstTarget)
+        {
+            var type = dstTarget.GetType();
+            var fields = type.GetFields(reflectionFlags);
+
+            var targetFiledType = typeof(HashSet<string>);
+
+            foreach (var field in fields)
+            {
+                if (field.Name == "m_configurations")
+                {
+                    var src = (Dictionary<string, MakeItSoConfig_Configuration>)type.GetField(field.Name, reflectionFlags).GetValue(srcTarget);
+                    var dst = (Dictionary<string, MakeItSoConfig_Configuration>)type.GetField(field.Name, reflectionFlags).GetValue(dstTarget);
+
+                    foreach (var key in src.Keys)
+                    {
+                        if (dst.ContainsKey(key))
+                        {
+                            var srcValue = src[key];
+                            var dstValue = dst[key];
+
+                            applyField(srcValue, dstValue);
+                        }
+                    }
+                }
+            }
+        }
+
         private void applyAllProjectsConfig(MakeItSoConfig_Project projConfig)
         {
             applyField(m_allProjects, projConfig);
+        }
+
+        private void applyAllProjectsConfigurationField(MakeItSoConfig_Project projConfig)
+        {
+            applyConfigurationsField(m_allProjects, projConfig);
         }
 
         private void applyAllProjectsConfig()
