@@ -127,9 +127,16 @@ namespace SolutionParser_VS2010
                         // parsed project in our collection of results...
                         VCProject vcProject = Utils.call(() => (project.Object as VCProject));
                         ProjectParser_CPP parser = new ProjectParser_CPP(vcProject, m_parsedSolution.RootFolderAbsolute);
-                        m_parsedSolution.addProjectInfo(projectName, parser.Project);
 
-                        ProjectParser_ForCUDA pcuda = new ProjectParser_ForCUDA(project.FileName, project.Name);
+                        ProjectParser_ForCUDA cudaparser = new ProjectParser_ForCUDA(project.FileName, project.Name);
+
+                        // Remove cuda file.
+                        foreach (var info in cudaparser.CompileInfos)
+                        {
+                            parser.Project.removeFile(info.File);
+                        }
+
+                        m_parsedSolution.addProjectInfo(projectName, parser.Project);
                     }
                     break;
 

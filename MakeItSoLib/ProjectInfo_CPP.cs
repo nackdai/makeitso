@@ -29,6 +29,11 @@ namespace MakeItSoLib
             m_files.Add(file);
         }
 
+        public void removeFile(string file)
+        {
+            m_files.Remove(file);
+        }
+
         /// <summary>
         /// Gets the collection of files in the project. 
         /// File paths are relative to the project's root folder.

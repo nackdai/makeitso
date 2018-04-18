@@ -25,7 +25,7 @@ namespace SolutionParser_VS2010
                 return;
             }
 
-            var config = MakeItSoConfig.Instance.getProjectConfig(projectName);
+            var projConfig = MakeItSoConfig.Instance.getProjectConfig(projectName);
 
             string inputxml = File.ReadAllText(path);
             XmlDocument xmlDocument = new XmlDocument();
@@ -40,17 +40,18 @@ namespace SolutionParser_VS2010
 
             foreach (XmlNode item in cudaItems)
             {
-                parseCudaItems(item, config);
+                parseFileCudaCompile(item, projConfig);
             }
 
             XmlNodeList commonCudaCompileItems = rootNode.SelectNodes("/rs:Project/rs:ItemDefinitionGroup/rs:CudaCompile", xmlnsmgr);
 
             foreach (XmlNode item in commonCudaCompileItems)
             {
+                parseCommonCudaCompile(item, projConfig);
             }
         }
 
-        private void parseCudaItems(XmlNode item, MakeItSoConfig_Project projConfig)
+        private void parseFileCudaCompile(XmlNode item, MakeItSoConfig_Project projConfig)
         {
             var inc = item.Attributes["Include"];
             if (inc == null)
@@ -58,7 +59,7 @@ namespace SolutionParser_VS2010
                 return;
             }
 
-            CompileInfo info = new CompileInfo();
+            CudaCompileInfo info = new CudaCompileInfo();
 
             info.m_file = inc.Value;
 
@@ -71,16 +72,82 @@ namespace SolutionParser_VS2010
 
                 if (!projConfig.configurationShouldBeRemoved(configuration))
                 {
-                    if (child.Name == "GenerateRelocatableDeviceCode")
-                    {
+                    configuration = parseConfiguration(configuration);
+                    var opt = info.getOption(configuration);
+                    parseCudaCompileOptions(opt, configuration, child, projConfig);
 
-                    }
-                    else if (child.Name == "AdditionalOptions")
+                    // TODO
+                    if (child.Name == "AdditionalOptions")
                     {
+                        opt.m_AdditionalOptions = child.InnerText;
+                        opt.m_AdditionalOptions = opt.m_AdditionalOptions.Replace("%(AdditionalOptions)", "");
                     }
                 }
 
                 child = child.NextSibling;
+            }
+
+            m_compileInfos.Add(info);
+        }
+
+        private void parseCommonCudaCompile(XmlNode item, MakeItSoConfig_Project projConfig)
+        {
+            var parent = item.ParentNode;
+
+            var cond = parent.Attributes["Condition"].Value;
+            var configuration = parseCondition(cond);
+
+            foreach (var info in m_compileInfos)
+            {
+                var child = item.FirstChild;
+
+                while (child != null)
+                {
+                    if (!projConfig.configurationShouldBeRemoved(configuration))
+                    {
+                        configuration = parseConfiguration(configuration);
+                        var opt = info.getOption(configuration);
+                        parseCudaCompileOptions(opt, configuration, child, projConfig);
+                    }
+
+                    child = child.NextSibling;
+                }
+            }
+        }
+
+        private void parseCudaCompileOptions(CudaCompileOption opt, string configuration, XmlNode item, MakeItSoConfig_Project projConfig)
+        {        
+            if (item.Name == "GenerateRelocatableDeviceCode")
+            {
+                opt.m_GenerateRelocatableDeviceCode = checkIsTrue(item.InnerText);
+            }
+            else if (item.Name == "TargetMachinePlatform")
+            {
+                opt.m_TargetMachinePlatform = Int32.Parse(item.InnerText);
+            }
+            else if (item.Name == "CodeGeneration")
+            {
+                opt.m_CodeGeneration = item.InnerText;
+            }
+            else if (item.Name == "NvccCompilation")
+            {
+                opt.m_NvccCompilation = item.InnerText;
+            }
+            else if (item.Name == "FastMath")
+            {
+                opt.m_FastMath = checkIsTrue(item.InnerText);
+            }
+            else if (item.Name == "CudaRuntime")
+            {
+                opt.m_CudaRuntime = item.InnerText;
+            }
+            else if (item.Name == "GPUDebugInfo")
+            {
+                opt.m_GPUDebugInfo = checkIsTrue(item.InnerText);
+            }
+            else if (item.Name == "HostDebugInfo")
+            {
+                opt.m_GenerateHostDebugInfo = checkIsTrue(item.InnerText);
             }
         }
 
@@ -102,13 +169,26 @@ namespace SolutionParser_VS2010
             return target;
         }
 
-        public class CompileOption
+        static private string parseConfiguration(string config)
         {
-            public bool IsGenerateRelocatableDeviceCode
+            string[] separator = { "|" };
+            var strs = config.Split(separator, System.StringSplitOptions.RemoveEmptyEntries);
+
+            return strs[0];
+        }
+
+        static private bool checkIsTrue(string val)
+        {
+            return val == "true";
+        }
+
+        public class CudaCompileOption
+        {
+            public string GenerateRelocatableDeviceCode
             {
                 get
                 {
-                    return m_isGenerateRelocatableDeviceCode;
+                    return m_GenerateRelocatableDeviceCode ? "-rdc=true" : "";
                 }
             }
 
@@ -116,31 +196,141 @@ namespace SolutionParser_VS2010
             {
                 get
                 {
-                    return m_additionalOptions;
+                    return m_AdditionalOptions;
                 }
             }
 
-            internal bool m_isGenerateRelocatableDeviceCode;
-            internal string m_additionalOptions;
+            public string NvccCompilation
+            {
+                get
+                {
+                    if (m_NvccCompilation == "compile")
+                    {
+                        return "--compile";
+                    }
+
+                    // TODO
+                    // Throw exception...
+                    return "";
+                }
+            }
+
+            public string CudaRuntime
+            {
+                get
+                {
+                    if (m_CudaRuntime == "Static")
+                    {
+                        return "-cudart static";
+                    }
+
+                    // TODO
+                    // Throw exception...
+                    return "";
+                }
+            }
+
+            public string TargetMachinePlatform
+            {
+                get
+                {
+                    string ret = "--machine " + m_TargetMachinePlatform.ToString();
+                    return ret;
+                }
+            }
+
+            public string GPUDebugInfo
+            {
+                get
+                {
+                    return m_GPUDebugInfo ? "-G" : "";
+                }
+            }
+
+            public string FastMath
+            {
+                get
+                {
+                    return m_FastMath ? "--use_fast_math" : "";
+                }
+            }
+
+            public string GenerateHostDebugInfo
+            {
+                get
+                {
+                    return m_GenerateHostDebugInfo ? "-g" : "";
+                }
+            }
+
+            public string CodeGeneration
+            {
+                get
+                {
+                    return m_CodeGeneration;
+                }
+            }
+
+            internal void SetValueByConfiguration(string configuration)
+            {
+                var config = configuration.ToLower();
+
+                if (config.Contains("debug"))
+                {
+                    m_GPUDebugInfo = true;
+                    m_GenerateHostDebugInfo = true;
+                }
+                else
+                {
+                    m_GPUDebugInfo = false;
+                    m_GenerateHostDebugInfo = false;
+                }
+            }
+
+            internal bool m_GenerateRelocatableDeviceCode = false;
+            internal string m_NvccCompilation = "compile";
+            internal string m_CudaRuntime = "Static";
+            internal int m_TargetMachinePlatform = 64;
+            internal bool m_GPUDebugInfo = false;
+            internal bool m_FastMath = false;
+            internal bool m_GenerateHostDebugInfo = false;
+            internal string m_CodeGeneration = "compute_20,sm_20";
+            internal string m_AdditionalOptions = "";
         }
 
-        public class CompileInfo
+        public class CudaCompileInfo
         {
-            CompileOption getOption(string configuration)
+            public CudaCompileOption getOption(string configuration)
             {
-                var ret = m_options[configuration];
-
-                if (ret == null)
+                if (!m_options.ContainsKey(configuration))
                 {
-                    ret = new CompileOption();
-                    m_options.Add(configuration, ret);
+                    m_options.Add(configuration, new CudaCompileOption());
+                    m_options[configuration].SetValueByConfiguration(configuration);
                 }
 
-                return ret;
+                return m_options[configuration];
+            }
+
+            public string File
+            {
+                get
+                {
+                    return m_file;
+                }
             }
 
             internal string m_file;
-            private Dictionary<string, CompileOption> m_options;
+            private Dictionary<string, CudaCompileOption> m_options = new Dictionary<string, CudaCompileOption>();
         }
+
+        public List<CudaCompileInfo> CompileInfos
+        {
+            get
+            {
+                return m_compileInfos;
+            }
+        }
+
+        private List<CudaCompileInfo> m_compileInfos = new List<CudaCompileInfo>();
     }
 }
