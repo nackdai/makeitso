@@ -31,7 +31,10 @@ namespace MakeItSoLib
 
         public void removeFile(string file)
         {
-            m_files.Remove(file);
+            m_files.RemoveWhere((string f) =>
+            {
+                return f == file;
+            });
         }
 
         /// <summary>

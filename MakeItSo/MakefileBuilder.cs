@@ -100,7 +100,8 @@ namespace MakeItSo
         {
             foreach (ProjectInfo projectInfo in m_solution.getProjectInfos())
             {
-                createProjectMakefile(projectInfo);
+                var projectInfoCuda = m_solution.getCudaProjectInfo(projectInfo.Name);
+                createProjectMakefile(projectInfo, projectInfoCuda);
             }
         }
 
@@ -120,7 +121,7 @@ namespace MakeItSo
         /// <summary>
         /// Creates a makefile for the project passed in.
         /// </summary>
-        private static void createProjectMakefile(ProjectInfo projectInfo)
+        private static void createProjectMakefile(ProjectInfo projectInfo, ProjectInfo_CUDA projectInfoCuda)
         {
             // Are we ignoring this project?
             if (MakeItSoConfig.Instance.ignoreProject(projectInfo.Name) == true)
@@ -132,7 +133,7 @@ namespace MakeItSo
             // project type...
             if (projectInfo is ProjectInfo_CPP)
             {
-                MakefileBuilder_Project_CPP.createMakefile(projectInfo as ProjectInfo_CPP);
+                MakefileBuilder_Project_CPP.createMakefile(projectInfo as ProjectInfo_CPP, projectInfoCuda);
             }
             if (projectInfo is ProjectInfo_CSharp)
             {

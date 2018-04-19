@@ -131,12 +131,13 @@ namespace SolutionParser_VS2010
                         ProjectParser_ForCUDA cudaparser = new ProjectParser_ForCUDA(project.FileName, project.Name);
 
                         // Remove cuda file.
-                        foreach (var info in cudaparser.CompileInfos)
+                        foreach (var info in cudaparser.Project.CompileInfos)
                         {
                             parser.Project.removeFile(info.File);
                         }
 
                         m_parsedSolution.addProjectInfo(projectName, parser.Project);
+                        m_parsedSolution.addCudaProjectInfo(projectName, cudaparser.Project);
                     }
                     break;
 

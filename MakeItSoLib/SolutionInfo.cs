@@ -48,6 +48,16 @@ namespace MakeItSoLib
             return m_projectInfos.Values.ToList();
         }
 
+        public void addCudaProjectInfo(string projectName, ProjectInfo_CUDA project)
+        {
+            m_cudaProjectInfos.Add(projectName, project);
+        }
+
+        public ProjectInfo_CUDA getCudaProjectInfo(string projectName)
+        {
+            return m_cudaProjectInfos[projectName];
+        }
+
         /// <summary>
         /// Adds a required project to the project passed in.
         /// </summary>
@@ -125,6 +135,8 @@ namespace MakeItSoLib
         // The collection of projects in the solution, keyed by
         // the project name...
         private Dictionary<string, ProjectInfo> m_projectInfos = new Dictionary<string, ProjectInfo>();
+
+        private Dictionary<string, ProjectInfo_CUDA> m_cudaProjectInfos = new Dictionary<string, ProjectInfo_CUDA>();
 
         #endregion
 

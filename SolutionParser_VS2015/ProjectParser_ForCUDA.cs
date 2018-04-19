@@ -59,9 +59,10 @@ namespace SolutionParser_VS2010
                 return;
             }
 
-            CudaCompileInfo info = new CudaCompileInfo();
+            ProjectInfo_CUDA.CudaCompileInfo info = new ProjectInfo_CUDA.CudaCompileInfo();
 
-            info.m_file = inc.Value;
+            info.File = inc.Value;
+            info.File = info.File.Replace("\\", "/");
 
             var child = item.FirstChild;
             
@@ -79,15 +80,15 @@ namespace SolutionParser_VS2010
                     // TODO
                     if (child.Name == "AdditionalOptions")
                     {
-                        opt.m_AdditionalOptions = child.InnerText;
-                        opt.m_AdditionalOptions = opt.m_AdditionalOptions.Replace("%(AdditionalOptions)", "");
+                        opt.AdditionalOptions = child.InnerText;
+                        opt.AdditionalOptions = opt.AdditionalOptions.Replace("%(AdditionalOptions)", "");
                     }
                 }
 
                 child = child.NextSibling;
             }
 
-            m_compileInfos.Add(info);
+            m_Project.addCompileInfo(info);
         }
 
         private void parseCommonCudaCompile(XmlNode item, MakeItSoConfig_Project projConfig)
@@ -97,7 +98,7 @@ namespace SolutionParser_VS2010
             var cond = parent.Attributes["Condition"].Value;
             var configuration = parseCondition(cond);
 
-            foreach (var info in m_compileInfos)
+            foreach (var info in m_Project.CompileInfos)
             {
                 var child = item.FirstChild;
 
@@ -115,39 +116,39 @@ namespace SolutionParser_VS2010
             }
         }
 
-        private void parseCudaCompileOptions(CudaCompileOption opt, string configuration, XmlNode item, MakeItSoConfig_Project projConfig)
+        private void parseCudaCompileOptions(ProjectInfo_CUDA.CudaCompileOption opt, string configuration, XmlNode item, MakeItSoConfig_Project projConfig)
         {        
             if (item.Name == "GenerateRelocatableDeviceCode")
             {
-                opt.m_GenerateRelocatableDeviceCode = checkIsTrue(item.InnerText);
+                opt.GenerateRelocatableDeviceCode = checkIsTrue(item.InnerText);
             }
             else if (item.Name == "TargetMachinePlatform")
             {
-                opt.m_TargetMachinePlatform = Int32.Parse(item.InnerText);
+                opt.TargetMachinePlatform = Int32.Parse(item.InnerText);
             }
             else if (item.Name == "CodeGeneration")
             {
-                opt.m_CodeGeneration = item.InnerText;
+                opt.CodeGeneration = item.InnerText;
             }
             else if (item.Name == "NvccCompilation")
             {
-                opt.m_NvccCompilation = item.InnerText;
+                opt.NvccCompilation = item.InnerText;
             }
             else if (item.Name == "FastMath")
             {
-                opt.m_FastMath = checkIsTrue(item.InnerText);
+                opt.FastMath = checkIsTrue(item.InnerText);
             }
             else if (item.Name == "CudaRuntime")
             {
-                opt.m_CudaRuntime = item.InnerText;
+                opt.CudaRuntime = item.InnerText;
             }
             else if (item.Name == "GPUDebugInfo")
             {
-                opt.m_GPUDebugInfo = checkIsTrue(item.InnerText);
+                opt.GPUDebugInfo = checkIsTrue(item.InnerText);
             }
             else if (item.Name == "HostDebugInfo")
             {
-                opt.m_GenerateHostDebugInfo = checkIsTrue(item.InnerText);
+                opt.GenerateHostDebugInfo = checkIsTrue(item.InnerText);
             }
         }
 
@@ -182,155 +183,14 @@ namespace SolutionParser_VS2010
             return val == "true";
         }
 
-        public class CudaCompileOption
-        {
-            public string GenerateRelocatableDeviceCode
-            {
-                get
-                {
-                    return m_GenerateRelocatableDeviceCode ? "-rdc=true" : "";
-                }
-            }
-
-            public string AdditionalOptions
-            {
-                get
-                {
-                    return m_AdditionalOptions;
-                }
-            }
-
-            public string NvccCompilation
-            {
-                get
-                {
-                    if (m_NvccCompilation == "compile")
-                    {
-                        return "--compile";
-                    }
-
-                    // TODO
-                    // Throw exception...
-                    return "";
-                }
-            }
-
-            public string CudaRuntime
-            {
-                get
-                {
-                    if (m_CudaRuntime == "Static")
-                    {
-                        return "-cudart static";
-                    }
-
-                    // TODO
-                    // Throw exception...
-                    return "";
-                }
-            }
-
-            public string TargetMachinePlatform
-            {
-                get
-                {
-                    string ret = "--machine " + m_TargetMachinePlatform.ToString();
-                    return ret;
-                }
-            }
-
-            public string GPUDebugInfo
-            {
-                get
-                {
-                    return m_GPUDebugInfo ? "-G" : "";
-                }
-            }
-
-            public string FastMath
-            {
-                get
-                {
-                    return m_FastMath ? "--use_fast_math" : "";
-                }
-            }
-
-            public string GenerateHostDebugInfo
-            {
-                get
-                {
-                    return m_GenerateHostDebugInfo ? "-g" : "";
-                }
-            }
-
-            public string CodeGeneration
-            {
-                get
-                {
-                    return m_CodeGeneration;
-                }
-            }
-
-            internal void SetValueByConfiguration(string configuration)
-            {
-                var config = configuration.ToLower();
-
-                if (config.Contains("debug"))
-                {
-                    m_GPUDebugInfo = true;
-                    m_GenerateHostDebugInfo = true;
-                }
-                else
-                {
-                    m_GPUDebugInfo = false;
-                    m_GenerateHostDebugInfo = false;
-                }
-            }
-
-            internal bool m_GenerateRelocatableDeviceCode = false;
-            internal string m_NvccCompilation = "compile";
-            internal string m_CudaRuntime = "Static";
-            internal int m_TargetMachinePlatform = 64;
-            internal bool m_GPUDebugInfo = false;
-            internal bool m_FastMath = false;
-            internal bool m_GenerateHostDebugInfo = false;
-            internal string m_CodeGeneration = "compute_20,sm_20";
-            internal string m_AdditionalOptions = "";
-        }
-
-        public class CudaCompileInfo
-        {
-            public CudaCompileOption getOption(string configuration)
-            {
-                if (!m_options.ContainsKey(configuration))
-                {
-                    m_options.Add(configuration, new CudaCompileOption());
-                    m_options[configuration].SetValueByConfiguration(configuration);
-                }
-
-                return m_options[configuration];
-            }
-
-            public string File
-            {
-                get
-                {
-                    return m_file;
-                }
-            }
-
-            internal string m_file;
-            private Dictionary<string, CudaCompileOption> m_options = new Dictionary<string, CudaCompileOption>();
-        }
-
-        public List<CudaCompileInfo> CompileInfos
+        public ProjectInfo_CUDA Project
         {
             get
             {
-                return m_compileInfos;
+                return m_Project;
             }
         }
 
-        private List<CudaCompileInfo> m_compileInfos = new List<CudaCompileInfo>();
+        private ProjectInfo_CUDA m_Project = new ProjectInfo_CUDA();
     }
 }

@@ -59,6 +59,7 @@
     <Compile Include="ProjectConfigurationInfo_CSharp.cs" />
     <Compile Include="ProjectInfo.cs" />
     <Compile Include="ProjectInfo_CSharp.cs" />
+    <Compile Include="ProjectInfo_CUDA.cs" />
     <Compile Include="ReferenceInfo.cs" />
     <Compile Include="SolutionParserBase.cs" />
     <Compile Include="Log.cs" />

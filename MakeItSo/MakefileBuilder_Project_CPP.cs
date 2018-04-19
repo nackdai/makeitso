@@ -43,9 +43,9 @@ namespace MakeItSo
         /// <summary>
         /// We create a makefile for the project passed in.
         /// </summary>
-        public static void createMakefile(ProjectInfo_CPP project)
+        public static void createMakefile(ProjectInfo_CPP project, ProjectInfo_CUDA projectInfoCuda)
         {
-            new MakefileBuilder_Project_CPP(project);
+            new MakefileBuilder_Project_CPP(project, projectInfoCuda);
         }
 
         #endregion
@@ -55,7 +55,7 @@ namespace MakeItSo
         /// <summary>
         /// Constructor
         /// </summary>
-        private MakefileBuilder_Project_CPP(ProjectInfo_CPP project)
+        private MakefileBuilder_Project_CPP(ProjectInfo_CPP project, ProjectInfo_CUDA projectInfoCuda)
         {
             m_projectInfo = project;
             try
@@ -75,11 +75,13 @@ namespace MakeItSo
                 createImplicitlyLinkedObjectsVariables();
                 createCompilerFlagsVariables();
 
+                MakefileBuilder_Project_CUDA.createCudaLocationAndCompiler(m_file, m_projectInfo.Name);
+
                 // We create an 'all configurations' root target...
                 createAllConfigurationsTarget();
 
                 // We create one target for each configuration...
-                createConfigurationTargets();
+                createConfigurationTargets(projectInfoCuda);
 
                 // We create a target to create the intermediate and output folders...
                 createCreateFoldersTarget();
@@ -330,7 +332,7 @@ namespace MakeItSo
         /// Returns the include-path variable name for the configuration passed in.
         /// For example "Debug_Include_Path".
         /// </summary>
-        private string getIncludePathVariableName(ProjectConfigurationInfo_CPP configuration)
+        public static string getIncludePathVariableName(ProjectConfigurationInfo_CPP configuration)
         {
             return configuration.Name + "_Include_Path";
         }
@@ -357,7 +359,7 @@ namespace MakeItSo
         /// Returns the preprocessor-definitions variable name for the configuration passed in.
         /// For example "Debug_Preprocessor_Definitions".
         /// </summary>
-        private string getPreprocessorDefinitionsVariableName(ProjectConfigurationInfo_CPP configuration)
+        public static string getPreprocessorDefinitionsVariableName(ProjectConfigurationInfo_CPP configuration)
         {
             return configuration.Name + "_Preprocessor_Definitions";
         }
@@ -393,7 +395,7 @@ namespace MakeItSo
         /// <summary>
         /// Creates a target for each configuration.
         /// </summary>
-        private void createConfigurationTargets()
+        private void createConfigurationTargets(ProjectInfo_CUDA projectInfoCuda)
         {
             foreach (ProjectConfigurationInfo_CPP configurationInfo in m_projectInfo.getConfigurationInfos())
             {
@@ -408,6 +410,8 @@ namespace MakeItSo
 
                 // We compile all files for this target...
                 createFileTargets(configurationInfo);
+
+                MakefileBuilder_Project_CUDA.createFileTargets(m_file, m_projectInfo, configurationInfo, projectInfoCuda);
             }
         }
 
@@ -901,7 +905,12 @@ namespace MakeItSo
         /// </summary>
         private string getIntermediateFolder(ProjectConfigurationInfo_CPP configuration)
         {
-            string prefix = MakeItSoConfig.Instance.getProjectConfig(m_projectInfo.Name).CPPFolderPrefix;
+            return getIntermediateFolder(m_projectInfo, configuration);
+        }
+
+        public static string getIntermediateFolder(ProjectInfo_CPP projectInfo, ProjectConfigurationInfo_CPP configuration)
+        {
+            string prefix = MakeItSoConfig.Instance.getProjectConfig(projectInfo.Name).CPPFolderPrefix;
             return Utils.addPrefixToFolderPath(configuration.IntermediateFolder, prefix);
         }
 

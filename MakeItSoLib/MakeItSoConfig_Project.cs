@@ -208,6 +208,7 @@ namespace MakeItSoLib
             parseConfig_FilesAndDirectories(configNode);
 
             parseConfig_ReplaceProjectRootFolderRelative(configNode);
+            pasereConfig_CudaVersion(configNode);
         }
 
         #endregion
@@ -497,7 +498,7 @@ namespace MakeItSoLib
             }
         }
 
-        private string m_cudaVersion = "";
+        private string m_cudaVersion = string.Empty;
 
         public string getCudaVersion()
         {
