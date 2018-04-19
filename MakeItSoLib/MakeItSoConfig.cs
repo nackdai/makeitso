@@ -458,6 +458,12 @@ namespace MakeItSoLib
 
         private void applyAllProjectsConfigurationField(MakeItSoConfig_Project projConfig)
         {
+            foreach (var configName in m_allProjects.getCongurationNames())
+            {
+                // If no project conguration, create it.
+                projConfig.getConfiguration(configName);
+            }
+
             applyConfigurationsField(m_allProjects, projConfig);
         }
 

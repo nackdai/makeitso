@@ -96,6 +96,59 @@ namespace MakeItSo
             }
         }
 
+        public static string getLinkedCudaFile(string intermadiateFolder)
+        {
+            return intermadiateFolder + "/gpuCode.o";
+        }
+
+        public static void createCudaLinker(
+            StreamWriter writer,
+            ProjectInfo_CPP projectInfo,
+            ProjectConfigurationInfo_CPP configurationInfo,
+            ProjectInfo_CUDA projectCudaInfo)
+        {
+            var intermediateFolder = MakefileBuilder_Project_CPP.getIntermediateFolder(projectInfo, configurationInfo);
+
+            var projectSettings = MakeItSoConfig.Instance.getProjectConfig(projectInfo.Name);
+
+            string files = "";
+
+            foreach (var info in projectCudaInfo.CompileInfos)
+            {
+                var filename = info.File;
+
+                if (projectSettings.filesOrDirectoriesShouldBeRemoved(filename))
+                {
+                    continue;
+                }
+
+                string path = String.Format("{0}/{1}", intermediateFolder, filename);
+                if (filename.StartsWith(".."))
+                {
+                    var tmp = filename.Replace("../", "");
+                    path = String.Format("{0}/{1}", intermediateFolder, tmp);
+                }
+                string objectPath = Path.ChangeExtension(path, ".o");
+
+                files += objectPath + " ";
+            }
+
+            // TODO
+            string sm = "sm_20";
+            {
+                var opt = projectCudaInfo.CompileInfos[0].getOption(configurationInfo.Name);
+                var gens = getCodeGenerations(opt);
+                sm = gens[1];
+            }
+
+            var linkedFile = getLinkedCudaFile(intermediateFolder);
+
+            writer.WriteLine("# Link gpu code files.");
+            writer.WriteLine("{0}: {1}", linkedFile, files);
+            writer.WriteLine("\t$(NVCC) -arch={0} -dlink {1} -o {2}", sm, files, linkedFile);
+            writer.WriteLine("");
+        }
+
         private static string getCudaCompileFlags(string configuration, ProjectInfo_CUDA.CudaCompileOption compileOption)
         {
             string flags = "";
@@ -130,14 +183,10 @@ namespace MakeItSo
             flags += compileOption.FastMath ? " -use_fast_math" : "";
 
             {
-                string[] separator = { "," };
-                var strs = compileOption.CodeGeneration.Split(separator, System.StringSplitOptions.RemoveEmptyEntries);
+                var gens = getCodeGenerations(compileOption);
 
-                string sm = "";
-                string compute = "";
-
-                sm = strs[0].StartsWith("sm_") ? strs[0] : strs[1];
-                compute = strs[0].StartsWith("compute_") ? strs[0] : strs[1];
+                var compute = gens[0];
+                var sm = gens[1];
 
                 flags += string.Format(" -gencode arch={0},code={1}", compute, sm);
             }
@@ -147,6 +196,22 @@ namespace MakeItSo
             flags += string.Format(" -Xcompiler ,$({0}_Compiler_Flags)", configuration);
 
             return flags;
+        }
+
+        private static string[] getCodeGenerations(ProjectInfo_CUDA.CudaCompileOption compileOption)
+        {
+            string[] separator = { "," };
+            var strs = compileOption.CodeGeneration.Split(separator, System.StringSplitOptions.RemoveEmptyEntries);
+
+            string sm = "";
+            string compute = "";
+
+            sm = strs[0].StartsWith("sm_") ? strs[0] : strs[1];
+            compute = strs[0].StartsWith("compute_") ? strs[0] : strs[1];
+
+            string[] ret = { compute, sm };
+
+            return ret;
         }
     }
 }

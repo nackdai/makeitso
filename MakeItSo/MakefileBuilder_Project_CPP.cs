@@ -411,6 +411,7 @@ namespace MakeItSo
                 // We compile all files for this target...
                 createFileTargets(configurationInfo);
 
+                MakefileBuilder_Project_CUDA.createCudaLinker(m_file, m_projectInfo, configurationInfo, projectInfoCuda);
                 MakefileBuilder_Project_CUDA.createFileTargets(m_file, m_projectInfo, configurationInfo, projectInfoCuda);
             }
         }
@@ -546,6 +547,10 @@ namespace MakeItSo
                     dependencies += (objectPath + " ");
                 }
             }
+
+            // To Link with gpu code.
+            objectFiles += MakefileBuilder_Project_CUDA.getLinkedCudaFile(intermediateFolder);
+            dependencies += MakefileBuilder_Project_CUDA.getLinkedCudaFile(intermediateFolder);
 
             // We write the dependencies...
             m_file.WriteLine("{0}: {1}", configurationInfo.Name, dependencies);

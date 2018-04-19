@@ -132,6 +132,11 @@ namespace MakeItSoLib
             return m_configurations[configurationName];
         }
 
+        public List<string> getCongurationNames()
+        {
+            return m_configurations.Keys.ToList();
+        }
+
         /// <summary>
         /// Gets the C# compiler to use when building this project.
         /// </summary>
