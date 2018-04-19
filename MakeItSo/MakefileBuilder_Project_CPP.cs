@@ -58,6 +58,8 @@ namespace MakeItSo
         private MakefileBuilder_Project_CPP(ProjectInfo_CPP project, ProjectInfo_CUDA projectInfoCuda)
         {
             m_projectInfo = project;
+            m_projectInfoCuda = projectInfoCuda;
+
             try
             {
                 // We create the file '[project-name].makefile', and set it to 
@@ -82,7 +84,7 @@ namespace MakeItSo
                 createAllConfigurationsTarget();
 
                 // We create one target for each configuration...
-                createConfigurationTargets(projectInfoCuda);
+                createConfigurationTargets();
 
                 // We create a target to create the intermediate and output folders...
                 createCreateFoldersTarget();
@@ -396,7 +398,7 @@ namespace MakeItSo
         /// <summary>
         /// Creates a target for each configuration.
         /// </summary>
-        private void createConfigurationTargets(ProjectInfo_CUDA projectInfoCuda)
+        private void createConfigurationTargets()
         {
             foreach (ProjectConfigurationInfo_CPP configurationInfo in m_projectInfo.getConfigurationInfos())
             {
@@ -412,8 +414,8 @@ namespace MakeItSo
                 // We compile all files for this target...
                 createFileTargets(configurationInfo);
 
-                MakefileBuilder_Project_CUDA.createCudaLinker(m_file, m_projectInfo, configurationInfo, projectInfoCuda);
-                MakefileBuilder_Project_CUDA.createFileTargets(m_file, m_projectInfo, configurationInfo, projectInfoCuda);
+                MakefileBuilder_Project_CUDA.createCudaLinker(m_file, m_projectInfo, configurationInfo, m_projectInfoCuda);
+                MakefileBuilder_Project_CUDA.createFileTargets(m_file, m_projectInfo, configurationInfo, m_projectInfoCuda);
             }
         }
 
@@ -799,6 +801,24 @@ namespace MakeItSo
                     }
                 }
             }
+
+            foreach (var info in this.m_projectInfoCuda.CompileInfos)
+            {
+                var file = info.File;
+
+                var dir = Path.GetDirectoryName(file);
+                dir = dir.Replace(@"..\", "");
+                dir = dir.Replace(@"../", "");
+                dir = dir.Replace(@"\", "/");
+
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    if (!result.Contains(dir))
+                    {
+                        result.Add(dir);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -935,6 +955,8 @@ namespace MakeItSo
 
         // The parsed project data that we are creating the makefile from...
         private ProjectInfo_CPP m_projectInfo = null;
+
+        private ProjectInfo_CUDA m_projectInfoCuda = null;
 
         // The file we write to...
         private StreamWriter m_file = null;
