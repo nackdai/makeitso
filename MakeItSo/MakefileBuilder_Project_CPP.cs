@@ -299,7 +299,7 @@ namespace MakeItSo
                 {
                     if (libraryName.StartsWith("-"))
                     {
-                        libraries += libraryName;
+                        libraries += libraryName + " ";
                     }
                     else
                     {
@@ -552,8 +552,16 @@ namespace MakeItSo
             }
 
             // To Link with gpu code.
-            objectFiles += MakefileBuilder_Project_CUDA.getLinkedCudaFile(intermediateFolder);
-            dependencies += MakefileBuilder_Project_CUDA.getLinkedCudaFile(intermediateFolder);
+            if (m_projectInfo.ProjectType != ProjectInfo_CPP.ProjectTypeEnum.CPP_EXECUTABLE)
+            {
+                // NOTE
+                // https://stackoverflow.com/questions/26893588/creating-a-static-cuda-library-to-be-linked-with-a-c-program
+                // dlinkするときは元になったobjファイルも含めること.
+                // そうしないと、hostコードが含まれなくなる.
+
+                objectFiles += MakefileBuilder_Project_CUDA.getObjectFiles(intermediateFolder, m_projectInfoCuda);
+                dependencies += MakefileBuilder_Project_CUDA.getObjectFiles(intermediateFolder, m_projectInfoCuda);
+            }
 
             // We write the dependencies...
             m_file.WriteLine("{0}: {1}", configurationInfo.Name, dependencies);

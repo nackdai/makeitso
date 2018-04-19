@@ -126,9 +126,33 @@ namespace MakeItSo
             }
         }
 
-        public static string getLinkedCudaFile(string intermadiateFolder)
+        private static string getLinkedCudaFile(string intermediateFolder)
         {
-            return intermadiateFolder + "/gpuCode.o";
+            return intermediateFolder + "/gpuCode.o";
+        }
+
+        public static string getObjectFiles(string intermediateFolder, ProjectInfo_CUDA projectCudaInfo)
+        {
+            var files = "";
+
+            foreach (var info in projectCudaInfo.CompileInfos)
+            {
+                var filename = info.File;
+
+                string path = String.Format("{0}/{1}", intermediateFolder, filename);
+                if (filename.StartsWith(".."))
+                {
+                    var tmp = filename.Replace("../", "");
+                    path = String.Format("{0}/{1}", intermediateFolder, tmp);
+                }
+                string objectPath = Path.ChangeExtension(path, ".o");
+
+                files += objectPath + " ";
+            }
+
+            files += getLinkedCudaFile(intermediateFolder) + " ";
+
+            return files;
         }
 
         public static void createCudaLinker(
@@ -137,9 +161,15 @@ namespace MakeItSo
             ProjectConfigurationInfo_CPP configurationInfo,
             ProjectInfo_CUDA projectCudaInfo)
         {
-            var intermediateFolder = MakefileBuilder_Project_CPP.getIntermediateFolder(projectInfo, configurationInfo);
-
             var projectSettings = MakeItSoConfig.Instance.getProjectConfig(projectInfo.Name);
+            var cudaVersion = projectSettings.getCudaVersion();
+
+            if (cudaVersion == string.Empty || cudaVersion.Length == 0)
+            {
+                return;
+            }
+
+            var intermediateFolder = MakefileBuilder_Project_CPP.getIntermediateFolder(projectInfo, configurationInfo);
 
             string files = "";
 
