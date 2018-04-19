@@ -85,6 +85,11 @@ namespace MakeItSoLib
             return m_compilerFlagsToRemove.Contains(flag);
         }
 
+        public bool hostCompilerFlagCudaShouldBeRemoved(string flag)
+        {
+            return m_hostCompilerFlagsCudaToRemove.Contains(flag);
+        }
+
         /// <summary>
         /// Returns true if the configuration name passed in should
         /// be removed from the project.
@@ -317,6 +322,16 @@ namespace MakeItSoLib
                 if (flagAttribute == null || configurationAttribute == null) continue;
                 getConfiguration(configurationAttribute.Value).addCompilerFlagToAdd(flagAttribute.Value);
             }
+
+            // We find 'RemoveHostCompilerFlagCuda' nodes...
+            XmlNodeList removeHostCompilerFlagCudaNodes = configNode.SelectNodes("RemoveHostCompilerFlagCuda");
+            foreach (XmlNode node in removeHostCompilerFlagCudaNodes)
+            {
+                XmlAttribute flagAttribute = node.Attributes["flag"];
+                if (flagAttribute == null) continue;
+                m_hostCompilerFlagsCudaToRemove.Add(flagAttribute.Value);
+            }
+
         }
 
         /// <summary>
@@ -587,6 +602,8 @@ namespace MakeItSoLib
 
         // Collection of compiler flags to remove...
         private HashSet<string> m_compilerFlagsToRemove = new HashSet<string>();
+
+        private HashSet<string> m_hostCompilerFlagsCudaToRemove = new HashSet<string>();
 
         // Collection of coniguration name to remove...
         private HashSet<string> m_configurationToRemove = new HashSet<string>();

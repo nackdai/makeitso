@@ -76,6 +76,7 @@ namespace MakeItSo
                 createCompilerFlagsVariables();
 
                 MakefileBuilder_Project_CUDA.createCudaLocationAndCompiler(m_file, m_projectInfo.Name);
+                MakefileBuilder_Project_CUDA.createCudaIncludes(m_file, m_projectInfo);
 
                 // We create an 'all configurations' root target...
                 createAllConfigurationsTarget();

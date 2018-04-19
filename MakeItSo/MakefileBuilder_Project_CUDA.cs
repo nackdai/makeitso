@@ -45,13 +45,43 @@ namespace MakeItSo
 
             if (cudaVersion != string.Empty || cudaVersion.Length > 0)
             {
-                // Cuda location.
+                // CUDA location.
                 writer.WriteLine("# Location of the CUDA Toolkit");
-                var path = "/usr/local/cuda-" + cudaVersion;
-                writer.WriteLine("CUDA_PATH ?= \"{0}\"", path);
+                var path = getCudaPath(cudaVersion);
+                writer.WriteLine("CUDA_PATH?=\"{0}\"", path);
 
                 // NVCC.
                 writer.WriteLine("NVCC:= $(CUDA_PATH)/bin/nvcc -ccbin $(CPP_COMPILER)");
+
+                writer.WriteLine("");
+            }
+        }
+
+        private static string getCudaPath(string version)
+        {
+            var path = "/usr/local/cuda-" + version;
+            return path;
+        }
+
+        public static void createCudaIncludes(
+            StreamWriter writer,
+            ProjectInfo_CPP projectInfo)
+        {
+            var projConfig = MakeItSoConfig.Instance.getProjectConfig(projectInfo.Name);
+            var cudaVersion = projConfig.getCudaVersion();
+
+            if (cudaVersion != string.Empty || cudaVersion.Length > 0)
+            {
+                var configurationInfos = projectInfo.getConfigurationInfos();
+
+                foreach (var configurationInfo in configurationInfos)
+                {
+                    var includes = MakefileBuilder_Project_CPP.getIncludePathVariableName(configurationInfo);
+
+                    var cudaIncludePath = getCudaPath(cudaVersion) + "/include";
+
+                    writer.WriteLine("{0}+=-I\"{1}\"", includes, cudaIncludePath);
+                }
 
                 writer.WriteLine("");
             }
@@ -79,7 +109,7 @@ namespace MakeItSo
                 }
 
                 var opt = info.getOption(configurationInfo.Name);
-                string compileFlags = getCudaCompileFlags(configurationInfo.Name, opt);
+                string compileFlags = getCudaCompileFlags(configurationInfo, opt);
 
                 string path = String.Format("{0}/{1}", intermediateFolder, filename);
                 if (filename.StartsWith(".."))
@@ -149,7 +179,9 @@ namespace MakeItSo
             writer.WriteLine("");
         }
 
-        private static string getCudaCompileFlags(string configuration, ProjectInfo_CUDA.CudaCompileOption compileOption)
+        private static string getCudaCompileFlags(
+            ProjectConfigurationInfo_CPP configurationInfo, 
+            ProjectInfo_CUDA.CudaCompileOption compileOption)
         {
             string flags = "";
 
@@ -193,7 +225,21 @@ namespace MakeItSo
 
             flags += " " + compileOption.AdditionalOptions;
 
-            flags += string.Format(" -Xcompiler ,$({0}_Compiler_Flags)", configuration);
+            {
+                var hostCompileFlagsList = configurationInfo.getCompilerFlags().ToList(); ;
+                var projectSettings = MakeItSoConfig.Instance.getProjectConfig(configurationInfo.ParentProjectInfo.Name);
+
+                string hostCompileFlags = "";
+                foreach (var f in hostCompileFlagsList)
+                {
+                    if (!projectSettings.hostCompilerFlagCudaShouldBeRemoved(f))
+                    {
+                        hostCompileFlags += f + " ";
+                    }
+                }
+
+                flags += string.Format(" -Xcompiler ,{0}", hostCompileFlags);
+            }
 
             return flags;
         }
