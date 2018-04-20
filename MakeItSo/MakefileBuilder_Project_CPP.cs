@@ -66,7 +66,7 @@ namespace MakeItSo
                 // use unix-style line endings...
                 string path = String.Format("{0}/{1}.makefile", m_projectInfo.RootFolderAbsolute, m_projectInfo.Name);
                 m_file = new StreamWriter(path, false);
-                m_file.NewLine = "\n";
+                m_file.NewLine = MakeItSoConfig.Instance.NewLine;
 
                 // We create variables...
                 createCompilerVariables();

@@ -72,7 +72,7 @@ namespace MakeItSo
                 // We create the file 'Makefile', and set it to use unix-style line endings...
                 string path = m_solution.RootFolderAbsolute + "/Makefile";
                 m_file = new StreamWriter(path, false);
-                m_file.NewLine = "\n";
+                m_file.NewLine = MakeItSoConfig.Instance.NewLine;
 
                 // We create an 'all projects' root target...
                 createAllProjectsTarget();

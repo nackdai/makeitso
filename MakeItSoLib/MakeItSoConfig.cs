@@ -111,6 +111,14 @@ namespace MakeItSoLib
             get { return m_buildArguments; }
         }
 
+        public string NewLine
+        {
+            get
+            {
+                return m_newLine;
+            }
+        }
+
         /// <summary>
         /// Returns config for the project passed in if we have specific config 
         /// for it. Returns the all-projects config if we don't.
@@ -214,6 +222,10 @@ namespace MakeItSoLib
                             m_configFile = m_configFile.ToLower();
                             break;
 
+                        case "-nl":
+                            parseNewLine(value);
+                            break;
+
                         default:
                             showHelp = true;
                             break;
@@ -234,9 +246,29 @@ namespace MakeItSoLib
                 Log.log("   -file=[solution-file]           Converts the solution specified.");
                 Log.log("   -cygwin=[True/False]            Creates a cygwin makefile if True. Defaults to False.");
                 Log.log("   -build-args=[arg1,arg2,...]     Adds build arguments to gcc");
+                Log.log("   -config=[config-file]           Specify cofig file to create Makefile.");
+                Log.log("   -nl=[cr/lf/crlf]                Specify line feed type. Default value is [lf]");
                 Log.log("---------------------------------------------------------------------------------");
 
                 m_convertSolution = false;
+            }
+        }
+
+        private void parseNewLine(string value)
+        {
+            value = value.ToLower();
+
+            switch (value)
+            {
+                case "cr":
+                    m_newLine = "\r";
+                    break;
+                case "lf":
+                    m_newLine = "\n";
+                    break;
+                case "crlf":
+                    m_newLine = "\r\n";
+                    break;
             }
         }
 
@@ -511,6 +543,8 @@ namespace MakeItSoLib
         // Collection of projects that should be ignored, ie removed 
         // from the solution. (Held in lower-case.)
         private HashSet<string> m_projectsToIgnore = new HashSet<string>();
+
+        private string m_newLine = "\n";
 
         #endregion
     }
