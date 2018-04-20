@@ -77,8 +77,8 @@ namespace MakeItSo
                 createImplicitlyLinkedObjectsVariables();
                 createCompilerFlagsVariables();
 
-                MakefileBuilder_Project_CUDA.createCudaLocationAndCompiler(m_file, m_projectInfo.Name);
-                MakefileBuilder_Project_CUDA.createCudaIncludes(m_file, m_projectInfo);
+                MakefileBuilder_Project_CUDA.createCudaLocationAndCompiler(m_file, m_projectInfoCuda);
+                MakefileBuilder_Project_CUDA.createCudaIncludesAndLibaryPath(m_file, m_projectInfo, m_projectInfoCuda);
 
                 // We create an 'all configurations' root target...
                 createAllConfigurationsTarget();
@@ -344,7 +344,7 @@ namespace MakeItSo
         /// Returns the library-path variable name for the configuration passed in.
         /// For example "Debug_Library_Path".
         /// </summary>
-        private string getLibraryPathVariableName(ProjectConfigurationInfo_CPP configuration)
+        public static string getLibraryPathVariableName(ProjectConfigurationInfo_CPP configuration)
         {
             return configuration.Name + "_Library_Path";
         }

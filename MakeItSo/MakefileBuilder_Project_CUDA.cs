@@ -38,16 +38,15 @@ namespace MakeItSo
     /// </remarks>
     class MakefileBuilder_Project_CUDA
     {
-        public static void createCudaLocationAndCompiler(StreamWriter writer, string projectName)
+        public static void createCudaLocationAndCompiler(
+            StreamWriter writer,
+            ProjectInfo_CUDA projectCudaInfo)
         {
-            var projConfig = MakeItSoConfig.Instance.getProjectConfig(projectName);
-            var cudaVersion = projConfig.getCudaVersion();
-
-            if (cudaVersion != string.Empty || cudaVersion.Length > 0)
+            if (projectCudaInfo.IsCUDA)
             {
                 // CUDA location.
                 writer.WriteLine("# Location of the CUDA Toolkit");
-                var path = getCudaPath(cudaVersion);
+                var path = getCudaPath();
                 writer.WriteLine("CUDA_PATH?=\"{0}\"", path);
 
                 // NVCC.
@@ -57,30 +56,35 @@ namespace MakeItSo
             }
         }
 
-        private static string getCudaPath(string version)
+        private static string getCudaPath()
         {
-            var path = "/usr/local/cuda-" + version;
+            var path = "/usr/local/cuda";
             return path;
         }
 
-        public static void createCudaIncludes(
+        public static void createCudaIncludesAndLibaryPath(
             StreamWriter writer,
-            ProjectInfo_CPP projectInfo)
+            ProjectInfo_CPP projectInfo,
+            ProjectInfo_CUDA projectCudaInfo)
         {
-            var projConfig = MakeItSoConfig.Instance.getProjectConfig(projectInfo.Name);
-            var cudaVersion = projConfig.getCudaVersion();
-
-            if (cudaVersion != string.Empty || cudaVersion.Length > 0)
+            if (projectCudaInfo.IsCUDA)
             {
                 var configurationInfos = projectInfo.getConfigurationInfos();
 
                 foreach (var configurationInfo in configurationInfos)
                 {
                     var includes = MakefileBuilder_Project_CPP.getIncludePathVariableName(configurationInfo);
-
-                    var cudaIncludePath = getCudaPath(cudaVersion) + "/include";
-
+                    var cudaIncludePath = getCudaPath() + "/include";
                     writer.WriteLine("{0}+=-I\"{1}\"", includes, cudaIncludePath);
+                }
+
+                writer.WriteLine("");
+
+                foreach (var configurationInfo in configurationInfos)
+                {
+                    var libPath = MakefileBuilder_Project_CPP.getLibraryPathVariableName(configurationInfo);
+                    var cudaLabraryPath = getCudaPath() + "/lib64";
+                    writer.WriteLine("{0}+=-L\"{1}\"", libPath, cudaLabraryPath);
                 }
 
                 writer.WriteLine("");
@@ -93,6 +97,11 @@ namespace MakeItSo
             ProjectConfigurationInfo_CPP configurationInfo, 
             ProjectInfo_CUDA projectCudaInfo)
         {
+            if (!projectCudaInfo.IsCUDA)
+            {
+                return;
+            }
+
             var includePath = String.Format("$({0})", MakefileBuilder_Project_CPP.getIncludePathVariableName(configurationInfo));
             var preprocessorDefinitions = String.Format("$({0})", MakefileBuilder_Project_CPP.getPreprocessorDefinitionsVariableName(configurationInfo));
             var intermediateFolder = MakefileBuilder_Project_CPP.getIntermediateFolder(projectInfo, configurationInfo);
@@ -161,13 +170,12 @@ namespace MakeItSo
             ProjectConfigurationInfo_CPP configurationInfo,
             ProjectInfo_CUDA projectCudaInfo)
         {
-            var projectSettings = MakeItSoConfig.Instance.getProjectConfig(projectInfo.Name);
-            var cudaVersion = projectSettings.getCudaVersion();
-
-            if (cudaVersion == string.Empty || cudaVersion.Length == 0)
+            if (!projectCudaInfo.IsCUDA)
             {
                 return;
             }
+
+            var projectSettings = MakeItSoConfig.Instance.getProjectConfig(projectInfo.Name);
 
             var intermediateFolder = MakefileBuilder_Project_CPP.getIntermediateFolder(projectInfo, configurationInfo);
 
@@ -196,7 +204,9 @@ namespace MakeItSo
             // TODO
             string sm = "sm_20";
             {
-                var opt = projectCudaInfo.CompileInfos[0].getOption(configurationInfo.Name);
+                var compileInfo = projectCudaInfo.CompileInfos.Count > 0 ? projectCudaInfo.CompileInfos[0] : projectCudaInfo.AllCompileInfo;
+
+                var opt = compileInfo.getOption(configurationInfo.Name);
                 var gens = getCodeGenerations(opt);
                 sm = gens[1];
             }

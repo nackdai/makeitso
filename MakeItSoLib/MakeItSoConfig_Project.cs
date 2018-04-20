@@ -218,7 +218,6 @@ namespace MakeItSoLib
             parseConfig_FilesAndDirectories(configNode);
 
             parseConfig_ReplaceProjectRootFolderRelative(configNode);
-            pasereConfig_CudaVersion(configNode);
         }
 
         #endregion
@@ -498,31 +497,6 @@ namespace MakeItSoLib
         public string getReplaceProjectRootFolderRelative()
         {
             return m_replaceProjectRootFolderRelative;
-        }
-
-        private void pasereConfig_CudaVersion(XmlNode configNode)
-        {
-            XmlNodeList nodes = configNode.SelectNodes("CudaVersion");
-            foreach (XmlNode node in nodes)
-            {
-                XmlAttribute configAttribute = node.Attributes["version"];
-                if (configAttribute == null)
-                {
-                    continue;
-                }
-
-                m_cudaVersion = configAttribute.Value;
-
-                // Replace with just only one node.
-                break;
-            }
-        }
-
-        private string m_cudaVersion = string.Empty;
-
-        public string getCudaVersion()
-        {
-            return m_cudaVersion;
         }
 
         /// <summary>

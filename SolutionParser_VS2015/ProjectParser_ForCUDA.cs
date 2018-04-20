@@ -49,6 +49,39 @@ namespace SolutionParser_VS2010
             {
                 parseCommonCudaCompile(item, projConfig);
             }
+
+            if (m_Project.CompileInfos.Count == 0)
+            {
+                // NOTE
+                //<ImportGroup Label="ExtensionSettings">
+                //  <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA8.0.props"/>
+                //</ImportGroup>
+
+                // Check if CUDA project or not.
+                XmlNodeList importGroups = rootNode.SelectNodes("/rs:Project/rs:ImportGroup", xmlnsmgr);
+
+                foreach (XmlNode group in importGroups)
+                {
+                    var attrib = group.Attributes["Label"];
+                    if (attrib != null && attrib.Value == "ExtensionSettings")
+                    {
+                        var item = group.FirstChild;
+                        if (item != null)
+                        {
+                            var prop = item.Attributes["Project"];
+                            if (prop != null)
+                            {
+                                m_Project.IsCUDA = prop.Value.Contains("CUDA");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                m_Project.IsCUDA = true;
+            }
         }
 
         private void parseFileCudaCompile(XmlNode item, MakeItSoConfig_Project projConfig)
@@ -98,20 +131,33 @@ namespace SolutionParser_VS2010
             var cond = parent.Attributes["Condition"].Value;
             var configuration = parseCondition(cond);
 
-            foreach (var info in m_Project.CompileInfos)
+            if (m_Project.CompileInfos.Count == 0)
             {
-                var child = item.FirstChild;
-
-                while (child != null)
+                if (!projConfig.configurationShouldBeRemoved(configuration))
                 {
-                    if (!projConfig.configurationShouldBeRemoved(configuration))
-                    {
-                        configuration = parseConfiguration(configuration);
-                        var opt = info.getOption(configuration);
-                        parseCudaCompileOptions(opt, configuration, child, projConfig);
-                    }
+                    configuration = parseConfiguration(configuration);
+                    var opt = m_Project.AllCompileInfo.getOption(configuration);
+                    var node = item.FirstChild;
+                    parseCudaCompileOptions(opt, configuration, node, projConfig);
+                }
+            }
+            else
+            {
+                foreach (var info in m_Project.CompileInfos)
+                {
+                    var child = item.FirstChild;
 
-                    child = child.NextSibling;
+                    while (child != null)
+                    {
+                        if (!projConfig.configurationShouldBeRemoved(configuration))
+                        {
+                            configuration = parseConfiguration(configuration);
+                            var opt = info.getOption(configuration);
+                            parseCudaCompileOptions(opt, configuration, child, projConfig);
+                        }
+
+                        child = child.NextSibling;
+                    }
                 }
             }
         }

@@ -85,11 +85,26 @@ namespace MakeItSoLib
             }
         }
 
+        public CudaCompileInfo AllCompileInfo
+        {
+            get
+            {
+                return m_allCompileInfo;
+            }
+        }
+
         public void addCompileInfo(CudaCompileInfo info)
         {
             m_compileInfos.Add(info);
         }
 
+        public bool IsCUDA
+        {
+            get;
+            set;
+        } = false;
+
         private List<CudaCompileInfo> m_compileInfos = new List<CudaCompileInfo>();
+        private CudaCompileInfo m_allCompileInfo = new CudaCompileInfo();
     }
 }
