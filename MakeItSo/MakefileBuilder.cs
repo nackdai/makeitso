@@ -186,11 +186,47 @@ namespace MakeItSo
                 m_file.WriteLine("");
             }
 
+            // NOTE
+            // This is ad-hock, if possible, we have to check project dependency.
+            // I think most executable depend on libraries in a solution.
+            // So, firstly write library projects, after that write executable projects.
+
+            List<ProjectInfo> execList = new List<ProjectInfo>();
+            List<ProjectInfo> cppLibList = new List<ProjectInfo>();
+            List<ProjectInfo> csharpLibList = new List<ProjectInfo>();
+            List<ProjectInfo> dllList = new List<ProjectInfo>();
+
+            foreach (var info in m_solution.getProjectInfos())
+            {
+                if (MakeItSoConfig.Instance.ignoreProject(info.Name) == false)
+                {
+                    if (info.ProjectType == ProjectInfo.ProjectTypeEnum.CPP_EXECUTABLE
+                        || info.ProjectType == ProjectInfo.ProjectTypeEnum.CSHARP_EXECUTABLE
+                        || info.ProjectType == ProjectInfo.ProjectTypeEnum.CSHARP_WINFORMS_EXECUTABLE)
+                    {
+                        execList.Add(info);
+                    }
+                    else if (info.ProjectType == ProjectInfo.ProjectTypeEnum.CPP_STATIC_LIBRARY)
+                    {
+                        cppLibList.Add(info);
+                    }
+                    else if (info.ProjectType == ProjectInfo.ProjectTypeEnum.CSHARP_LIBRARY)
+                    {
+                        csharpLibList.Add(info);
+                    }
+                    else if (info.ProjectType == ProjectInfo.ProjectTypeEnum.CPP_DLL)
+                    {
+                        dllList.Add(info);
+                    }
+                }
+            }
+
             foreach (var config in projectInfo.getConfigurationInfos())
             {
                 m_file.WriteLine(".PHONY: {0}", config.Name);
                 string target = config.Name + ": ";
 
+#if false
                 foreach (var info in m_solution.getProjectInfos())
                 {
                     if (MakeItSoConfig.Instance.ignoreProject(info.Name) == false)
@@ -198,12 +234,30 @@ namespace MakeItSo
                         target += (info.Name + "_" + config.Name + " ");
                     }
                 }
+#else
+                foreach (var info in cppLibList)
+                {
+                    target += (info.Name + "_" + config.Name + " ");
+                }
+                foreach (var info in dllList)
+                {
+                    target += (info.Name + "_" + config.Name + " ");
+                }
+                foreach (var info in csharpLibList)
+                {
+                    target += (info.Name + "_" + config.Name + " ");
+                }
+                foreach (var info in execList)
+                {
+                    target += (info.Name + "_" + config.Name + " ");
+                }
+#endif
 
                 m_file.WriteLine(target);
                 m_file.WriteLine("");
             }
 #endif
-        }
+            }
 
 
         /// <summary>
