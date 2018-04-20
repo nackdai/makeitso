@@ -144,22 +144,25 @@ namespace MakeItSo
         {
             var files = "";
 
-            foreach (var info in projectCudaInfo.CompileInfos)
+            if (projectCudaInfo.IsCUDA)
             {
-                var filename = info.File;
-
-                string path = String.Format("{0}/{1}", intermediateFolder, filename);
-                if (filename.StartsWith(".."))
+                foreach (var info in projectCudaInfo.CompileInfos)
                 {
-                    var tmp = filename.Replace("../", "");
-                    path = String.Format("{0}/{1}", intermediateFolder, tmp);
+                    var filename = info.File;
+
+                    string path = String.Format("{0}/{1}", intermediateFolder, filename);
+                    if (filename.StartsWith(".."))
+                    {
+                        var tmp = filename.Replace("../", "");
+                        path = String.Format("{0}/{1}", intermediateFolder, tmp);
+                    }
+                    string objectPath = Path.ChangeExtension(path, ".o");
+
+                    files += objectPath + " ";
                 }
-                string objectPath = Path.ChangeExtension(path, ".o");
 
-                files += objectPath + " ";
+                files += getLinkedCudaFile(intermediateFolder) + " ";
             }
-
-            files += getLinkedCudaFile(intermediateFolder) + " ";
 
             return files;
         }
