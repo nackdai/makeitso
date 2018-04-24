@@ -173,7 +173,7 @@ namespace MakeItSo
             ProjectConfigurationInfo_CPP configurationInfo,
             ProjectInfo_CUDA projectCudaInfo)
         {
-            if (!projectCudaInfo.IsCUDA)
+            if (!projectCudaInfo.IsCUDA || projectCudaInfo.CompileInfos.Count == 0)
             {
                 return;
             }
@@ -203,6 +203,7 @@ namespace MakeItSo
 
                 files += objectPath + " ";
             }
+
 
             // TODO
             string sm = "sm_20";
