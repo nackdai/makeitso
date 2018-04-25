@@ -346,7 +346,8 @@ namespace MakeItSo
                 {
                     if (MakeItSoConfig.Instance.ignoreProject(requiredProject.Name) == false)
                     {
-                        dependencies += (requiredProject.Name + " ");
+                        string dependecy = String.Format("{0}_{1}", requiredProject.Name, config.Name);
+                        dependencies += (dependecy + " ");
                     }
                 }
                 m_file.WriteLine(dependencies);
