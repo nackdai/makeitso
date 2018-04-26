@@ -892,28 +892,23 @@ namespace MakeItSo
                 var intermadiateDirs = new List<string>();
                 getIntermediateDirectories(intermadiateDirs);
 
-                if (intermadiateDirs.Count > 0)
+                foreach (var dir in intermadiateDirs)
                 {
-                    foreach (var dir in intermadiateDirs)
+                    if (!projectSettings.filesOrDirectoriesShouldBeRemoved(dir))
                     {
-                        if (!projectSettings.filesOrDirectoriesShouldBeRemoved(dir))
-                        {
-                            // Object files...
-                            m_file.WriteLine("\trm -f {0}/{1}/*.o", intermediateFolder, dir);
+                        // Object files...
+                        m_file.WriteLine("\trm -f {0}/{1}/*.o", intermediateFolder, dir);
 
-                            // Dependencies files...
-                            m_file.WriteLine("\trm -f {0}/{1}/*.d", intermediateFolder, dir);
-                        }
+                        // Dependencies files...
+                        m_file.WriteLine("\trm -f {0}/{1}/*.d", intermediateFolder, dir);
                     }
                 }
-                else
-                {
-                    // Object files...
-                    m_file.WriteLine("\trm -f {0}/*.o", intermediateFolder);
 
-                    // Dependencies files...
-                    m_file.WriteLine("\trm -f {0}/*.d", intermediateFolder);
-                }
+                // Object files...
+                m_file.WriteLine("\trm -f {0}/*.o", intermediateFolder);
+
+                // Dependencies files...
+                m_file.WriteLine("\trm -f {0}/*.d", intermediateFolder);
 #endif
 
 #if false
