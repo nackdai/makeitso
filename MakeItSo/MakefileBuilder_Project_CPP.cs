@@ -859,7 +859,7 @@ namespace MakeItSo
                 }
 #endif
 
-                if (outputFolder != intermediateFolder)
+                //if (outputFolder != intermediateFolder)
                 {
                     m_file.WriteLine("\tmkdir -p {0}", getOutputFolder(configuration));
                 }
